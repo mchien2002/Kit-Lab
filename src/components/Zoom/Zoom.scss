@@ -1,0 +1,56 @@
+.zoom {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+
+  i {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    text-align: center;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  &__left {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+
+    background-color: #fff;
+    padding: 8px;
+    border-radius: 50%;
+  }
+
+  &__right {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+
+    background-color: #fff;
+    padding: 8px;
+    border-radius: 50px;
+
+    .ant-slider {
+      margin: 0;
+
+      .ant-slider-track {
+        background-color: #ffc918;
+      }
+
+      .ant-slider-handle {
+        &::after {
+          box-shadow: 0 0 0 2px #ffc918;
+        }
+      }
+    }
+  }
+}

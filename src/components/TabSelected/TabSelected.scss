@@ -1,0 +1,161 @@
+.tabSelected {
+  .tabTitle {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    margin-top: 6px;
+
+    .name {
+      font-size: 12px;
+      color: #5c5b5b;
+      font-weight: 600;
+    }
+
+    .step {
+      font-size: 12px;
+      color: #1b1b1b;
+      font-weight: 600;
+      background-color: #f1efef;
+      padding: 1px 4px;
+      border-radius: 8px;
+    }
+  }
+
+  .tabSelectedPane {
+    display: flex;
+    flex-direction: row;
+    gap: 3px;
+
+    .tabSelectedIndex {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+
+      width: var(--size);
+      background-color: #f1efef;
+      font-size: 10px;
+      font-weight: 600;
+      text-align: center;
+      border: none;
+      border-radius: 4px 4px 0 0;
+      padding: 2px 6px;
+      cursor: pointer;
+
+      p {
+        margin-bottom: 0;
+      }
+    }
+
+    .btn-next {
+      font-size: 10px;
+      border-radius: 4px 4px 0 0;
+      border: 0.7px dashed #d9d9d9;
+      border-bottom: none;
+      width: var(--sizeBlank);
+      cursor: pointer;
+    }
+
+    .tabSelectedIndex-active {
+      background-color: #ffc918;
+    }
+  }
+
+  .tabSelectedContent {
+    height: 70px;
+    border-radius: 0 0 4px 4px;
+    border: 1px solid #ffc918;
+    background: #fff;
+    padding: 5px 0;
+    display: var(--display);
+
+    .moduleDetail {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+
+      &__main {
+        display: flex;
+        flex-direction: row;
+
+        padding: 0 4px;
+        border-right: 1px solid #d6d5d5;
+
+        .module-icon {
+          width: 50px;
+          height: 50px;
+          border-radius: 4px;
+          object-fit: cover;
+        }
+
+        .material-icon {
+          width: 20px;
+          height: 20px;
+          object-fit: none;
+          border-radius: 50%;
+        }
+
+        .module-name {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 100px;
+
+          font-size: 9px;
+          font-weight: 600;
+          color: #5c5b5b;
+          margin-bottom: 0;
+          cursor: context-menu;
+        }
+
+        .module-material,
+        .module-texture {
+          font-size: 8px;
+          font-weight: 500;
+          color: #939393;
+          margin-bottom: 0;
+          margin-left: 4px;
+
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 40px;
+          cursor: context-menu;
+        }
+
+        .module-price {
+          font-size: 10px;
+          font-weight: 600;
+          color: #1b1b1b;
+          margin-bottom: 0;
+
+          i {
+            margin-right: 4px;
+            color: #ffc918;
+            background-color: #1b1b1b;
+            border-radius: 50%;
+          }
+        }
+      }
+
+      & div:last-child {
+        border-right: none;
+      }
+
+      &__sub {
+        width: 50%;
+      }
+    }
+  }
+
+  .nextStep {
+    .btn-next {
+      padding: 1.5px;
+    }
+
+    .nextStepContent {
+      width: 100%;
+      border: 1px solid #d6d5d5;
+    }
+  }
+}

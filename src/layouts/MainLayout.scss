@@ -1,0 +1,34 @@
+.mainLayout {
+  height: 100vh !important;
+  max-width: 1920px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+
+  &__header {
+    padding: 0 30px;
+
+    &__logo {
+      cursor: pointer;
+    }
+
+    i {
+      cursor: pointer;
+    }
+  }
+
+  &__children {
+    width: 100%;
+    height: 100%;
+  }
+
+  &__footer {
+    padding: 15px 30px;
+
+    i {
+      cursor: pointer;
+    }
+  }
+}

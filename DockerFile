@@ -1,0 +1,23 @@
+# Sử dụng image node làm base
+FROM node:18-alpine
+
+# Thiết lập thư mục làm việc trong container
+WORKDIR /app
+
+# Sao chép package.json và package-lock.json vào thư mục /app
+COPY package*.json ./
+
+# Cài đặt các dependencies
+RUN npm install
+
+# Sao chép toàn bộ mã nguồn vào thư mục /app
+COPY . .
+
+# Build ứng dụng React
+RUN npm run build
+
+# Khai báo port để mở trong container
+EXPOSE 5500
+
+# Khởi chạy ứng dụng React
+CMD ["npm", "start"]

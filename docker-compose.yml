@@ -1,0 +1,12 @@
+version: '1'
+services:
+  app:
+    build:
+      context: .
+      dockerfile: DockerFile
+    ports:
+      - '5500:5500'
+    volumes:
+      - '.:/app'
+      - '/app/node_modules'
+    stdin_open: true

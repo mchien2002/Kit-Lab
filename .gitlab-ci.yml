@@ -1,0 +1,33 @@
+variables:
+  AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
+  AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+  AWS_BUCKET_URL: $BUCKET_URL
+
+stages:
+  - build
+  - deploy
+  # - deploy_prod
+
+Build:
+  image: node:18.17.0-slim
+  stage: build
+  only:
+    - dev
+  script:
+    - npm install
+    - CI=false npm run build
+  artifacts:
+    paths:
+      - build
+    expire_in: 1 hour
+
+Deploy to staging:
+  image: python:latest
+  stage: deploy
+  only:
+    - dev
+  script:
+    - pip install awscli
+    - aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}
+    - aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}
+    - aws s3 sync ./build/ ${AWS_BUCKET_URL} --delete
