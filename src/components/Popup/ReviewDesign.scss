@@ -1,0 +1,250 @@
+.review-popup {
+  position: absolute;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+
+  .review-popup-close {
+    position: absolute;
+    width: 100vw;
+    height: 100vh;
+    left: 0;
+    top: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    cursor: pointer;
+  }
+}
+
+.reviewDesign {
+  position: absolute;
+  width: 90vw;
+  height: 90vh;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #f8f9f9;
+  z-index: 1100;
+
+  &__left {
+    .project-container {
+      border-radius: 8px;
+      background: #fff;
+      padding: 10px 16px;
+      margin-bottom: 10px;
+      box-shadow: 0px 0px 2px 0px rgba(58, 56, 49, 0.14),
+        0px 8px 16px 0px rgba(58, 56, 49, 0.12);
+
+      .project-name {
+        color: #1b1b1b;
+        font-size: 16px;
+        font-weight: 600;
+      }
+
+      .project-title {
+        width: 90px;
+        font-size: 10px;
+        font-weight: 600;
+      }
+
+      .project-content {
+        font-size: 10px;
+        font-weight: 500;
+      }
+
+      .project-label {
+        font-size: 10px;
+        font-weight: 600;
+      }
+
+      .project-value {
+        font-size: 10px;
+        font-weight: 500;
+        font-style: italic;
+      }
+    }
+
+    .design-image {
+      // height: 60%;
+      // width: 100%;
+      object-fit: cover;
+      border-radius: 6px;
+    }
+
+    .latest-project {
+      &__title {
+        color: #1b1b1b;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      &__name {
+        margin-bottom: 0;
+        font-size: 10px;
+        font-weight: 600;
+        margin-top: 4px;
+        height: 15px;
+        overflow: hidden;
+        display: -webkit-box !important;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        white-space: normal;
+      }
+
+      img {
+        border-radius: 6px;
+        height: 100%;
+      }
+
+      .new-project {
+        height: calc(100% - 19px);
+        min-height: 60px;
+        border-radius: 6px;
+        border: 1px dashed #d9d9d9;
+        color: #939393;
+        cursor: pointer;
+      }
+    }
+  }
+
+  &__right {
+    // .project-container {
+    //   border-radius: 8px;
+    //   background: #fff;
+    //   padding: 10px 16px;
+    //   margin-bottom: 10px;
+    //   box-shadow: 0px 0px 2px 0px rgba(58, 56, 49, 0.14),
+    //     0px 8px 16px 0px rgba(58, 56, 49, 0.12);
+
+    //   .project-name {
+    //     color: #1b1b1b;
+    //     font-size: 16px;
+    //     font-weight: 600;
+    //   }
+
+    //   .project-title {
+    //     width: 90px;
+    //     font-size: 10px;
+    //     font-weight: 600;
+    //   }
+
+    //   .project-content {
+    //     font-size: 10px;
+    //     font-weight: 500;
+    //   }
+
+    //   .project-label {
+    //     font-size: 10px;
+    //     font-weight: 600;
+    //   }
+
+    //   .project-value {
+    //     font-size: 10px;
+    //     font-weight: 500;
+    //     font-style: italic;
+    //   }
+    // }
+
+    .kitchen-container {
+      height: 100%;
+      border-radius: 8px;
+      background: #fff;
+      padding: 4px;
+      margin-bottom: 10px;
+      overflow-y: hidden;
+      box-shadow: 0px 0px 2px 0px rgba(58, 56, 49, 0.14),
+        0px 8px 16px 0px rgba(58, 56, 49, 0.12);
+
+      .ant-tabs-nav-wrap {
+        white-space: inherit;
+        width: 100%;
+
+        .ant-tabs-nav-list {
+          width: 100%;
+        }
+      }
+
+      .ant-tabs-nav-operations {
+        display: none !important;
+      }
+
+      .ant-tabs-nav {
+        margin-bottom: 0px;
+
+        &::before {
+          display: none;
+        }
+      }
+
+      .ant-tabs-content-holder {
+        transform: translateY(-5px);
+      }
+
+      .ant-tabs-tab {
+        display: flex;
+        justify-content: center;
+        width: 50%;
+
+        background-color: transparent !important;
+        padding: 5px 0px 12px 0px !important;
+        margin-left: 0 !important;
+        border: none !important;
+
+        &:hover {
+          color: unset;
+        }
+      }
+
+      .ant-tabs,
+      .ant-tabs-content,
+      .ant-tabs-tabpane {
+        height: 100%;
+      }
+
+      .ant-tabs-tab .ant-tabs-tab-btn {
+        font-size: 13px;
+        font-weight: 500;
+        text-align: center;
+      }
+      .ant-tabs-tab.ant-tabs-tab-active {
+        background-color: #e9e9e9 !important;
+      }
+      .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
+        color: #1b1b1b;
+      }
+    }
+
+    .price-container {
+      border-radius: 8px;
+      background: #fff;
+      padding: 8px 16px;
+      margin-bottom: 10px;
+      box-shadow: 0px 0px 2px 0px rgba(58, 56, 49, 0.14),
+        0px 8px 16px 0px rgba(58, 56, 49, 0.12);
+
+      &__label {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 0;
+      }
+
+      &__number {
+        font-size: 20px;
+        font-weight: 600;
+        margin-bottom: 0;
+      }
+    }
+
+    .btn-save {
+      border-radius: 10px;
+      background-color: #ffc918;
+      padding: 8px 32px;
+      border: none;
+      outline: none;
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 16px;
+      font-weight: 600;
+    }
+  }
+}

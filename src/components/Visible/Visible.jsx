@@ -40,8 +40,9 @@ export default function Visible() {
         <button
           className="btnShowHide"
           onClick={() => {
-            handleHide(context.display, "MEASURE");
+            // handleHide(context.display, "MEASURE");
             setVisibleMeasure(false);
+            context.handleHideMeasure();
           }}
         >
           <i className="far fa-eye-slash pe-2"></i>
@@ -51,8 +52,9 @@ export default function Visible() {
         <button
           className="btnShowHide"
           onClick={() => {
-            handleShow(context.display, "MEASURE");
+            // handleShow(context.display, "MEASURE");
             setVisibleMeasure(true);
+            context.handleShowMeasure();
           }}
         >
           <i className="far fa-eye pe-2"></i>

@@ -1,7 +1,23 @@
 body {
   margin: 0;
   font-family: "Montserrat", sans-serif;
-  color: #1b1b1b;
+  color: #565e64;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+div,
+p,
+span,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+label,
+input,
+button {
+  font-family: "Montserrat", sans-serif !important;
+  color: #565e64;
 }

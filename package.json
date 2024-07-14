@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@ant-design/icons": "^5.3.2",
     "@reduxjs/toolkit": "^1.9.5",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
@@ -10,21 +11,36 @@
     "@uidotdev/usehooks": "^2.1.1",
     "antd": "^5.7.2",
     "axios": "^1.4.0",
-    "bootstrap": "^5.3.0",
+    "bootstrap": "^5.3.2",
     "cookie": "^0.5.0",
+    "dat.gui": "^0.7.9",
+    "file-saver": "^2.0.5",
+    "fs": "^0.0.1-security",
     "fs-extra": "^11.1.1",
+    "html-to-image": "^1.11.11",
+    "html2canvas": "^1.4.1",
     "js-cookie": "^3.0.5",
+    "os": "^0.1.2",
+    "path": "^0.12.7",
     "path-browserify": "^1.0.1",
+    "query-string": "^9.0.0",
     "react": "^18.2.0",
+    "react-bootstrap": "^2.9.1",
     "react-cookie": "^4.1.1",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.45.1",
     "react-hot-toast": "^2.4.1",
     "react-icons": "^4.10.1",
+    "react-id-swiper": "^4.0.0",
     "react-redux": "^8.1.1",
     "react-router-dom": "^6.14.1",
-    "react-scripts": "5.0.1",
+    "react-scripts": "^5.0.1",
     "react-scroll": "^1.8.9",
+    "react-slick": "^0.29.0",
+    "sass": "^1.69.5",
+    "slick-carousel": "^1.8.1",
+    "sweetalert2": "^11.7.32",
+    "swiper": "^11.0.7",
     "three": "^0.138.3",
     "uuid": "^9.0.1",
     "web-vitals": "^2.1.4"
@@ -52,5 +68,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "dotenv": "^16.3.1"
   }
 }

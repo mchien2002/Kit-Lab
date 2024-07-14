@@ -1,18 +1,21 @@
-import React, { useState } from "react";
-import "./LoginPage.scss";
+import Cookies from "js-cookie";
+import React, { useContext, useState } from "react";
 import { useForm } from "react-hook-form";
-import { useDispatch, useSelector } from "react-redux";
-import { getTokenUserAction } from "../../store/actions/user.actions";
-import callApi from "../../utils/callApi";
-import Cookie from "js-cookie";
 import { useNavigate } from "react-router-dom";
+import { AppContext } from "../../App";
 import Loading from "../../components/Loading/Loading";
+import callApi from "../../utils/callApi";
+import "./LoginPage.scss";
 
 export default function LoginPage() {
-  const dispatch = useDispatch();
+  const appContext = useContext(AppContext);
   const navigate = useNavigate();
+
   const [isLoading, setIsLoading] = useState();
   const [showpass, setShowpass] = useState(false);
+  const [showError, setShowError] = useState(false);
+
+  const currentPathname = window.location.pathname;
 
   const login = async (data) => {
     try {
@@ -20,12 +23,16 @@ export default function LoginPage() {
       const res = await callApi(`customer/login`, "POST", data);
 
       if (res.data) {
-        console.log(">>>> " + JSON.stringify(res.data));
-        Cookie.set("token", res.data.data.token);
+        appContext.setIsLogin(true);
 
-        navigate("/");
+        Cookies.set("token", res.data.data.token);
+        Cookies.set("owner", res.data.data._id);
+
+        if (currentPathname === "/login") {
+          navigate("/");
+        }
       } else {
-        alert("Đăng nhập không thành công");
+        setShowError(true);
       }
     } catch (err) {
       console.log(err);
@@ -43,9 +50,7 @@ export default function LoginPage() {
   } = useForm();
 
   const onSubmit = (data) => {
-    console.log(data);
     login(data);
-    // dispatch(getTokenUserAction(data.username, data.password));
   };
 
   const handleClick = () => {
@@ -62,7 +67,7 @@ export default function LoginPage() {
     });
   };
 
-  const handleKeyPress = (event) => {
+  const handleKeyDown = (event) => {
     if (event.key === "Enter") {
       handleClick();
     }
@@ -76,19 +81,22 @@ export default function LoginPage() {
     <div className="loginPage">
       {isLoading ? <Loading /> : null}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="formLogin">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        onKeyDown={handleKeyDown}
+        className="formLogin"
+      >
         <h1>Đăng nhập</h1>
         <div className="group">
-          <label>Email</label>
+          <label>Tên đăng nhập</label>
           <input
             autoFocus
-            onKeyPress={handleKeyPress}
             type="text"
-            placeholder="Email"
+            placeholder="Tên đăng nhập"
             {...register("username", { required: true })}
           />
           {errors.username && (
-            <p className="error">Email không được để trống</p>
+            <p className="error">Tên đăng nhập không được để trống</p>
           )}
         </div>
 
@@ -96,7 +104,6 @@ export default function LoginPage() {
           <label>Mật khẩu</label>
           <div className="group__password">
             <input
-              onKeyPress={handleKeyPress}
               type={showpass ? "text" : "password"}
               placeholder="Mật khẩu"
               {...register("password", { required: true })}
@@ -121,6 +128,13 @@ export default function LoginPage() {
 
           <p className="forgot-pass">Quên mật khẩu?</p>
         </div>
+
+        {showError && (
+          <p className="error-login">
+            <strong>Email</strong> hoặc <strong>mật khẩu</strong> của bạn không
+            đúng
+          </p>
+        )}
 
         <button className="btn-login mt-5" type="button" onClick={handleClick}>
           Đăng nhập

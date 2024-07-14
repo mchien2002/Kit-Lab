@@ -12,6 +12,23 @@ $heightHeader: 40px;
     background-color: #fff;
     padding: 0 10px;
     font-size: 12px;
+
+    .ant-select-single {
+      height: unset;
+    }
+
+    .ant-select-selector {
+      font-size: 12px;
+      font-weight: 500;
+      height: 26px !important;
+      line-height: unset;
+      display: flex;
+      align-items: center;
+
+      .ant-select-selection-placeholder {
+        line-height: unset;
+      }
+    }
   }
 
   &__body {
@@ -29,6 +46,7 @@ $heightHeader: 40px;
       display: flex;
       flex-direction: column;
       gap: 8px;
+      background-color: #f2f2f2;
 
       &__main {
         height: 60%;
@@ -60,25 +78,54 @@ $heightHeader: 40px;
         }
 
         &__right {
-          // width: calc(100% - 100px);
           width: 100%;
           border-radius: 10px;
           border: 1px solid #e6e6e6;
-          background: #f6f6f6;
-          padding: 10px;
+          background-color: rgba(211, 211, 211, 0.8);
+          // padding: 10px;
           overflow: hidden;
 
+          .ant-tabs-nav-wrap {
+            width: 100%;
+
+            .ant-tabs-nav-list {
+              width: 100%;
+            }
+          }
+
+          .ant-tabs-nav-operations {
+            display: none !important;
+          }
+
           .ant-tabs-nav {
-            margin-bottom: 5px;
+            margin-bottom: 0px;
+
+            &::before {
+              display: none;
+            }
+          }
+
+          .ant-tabs-content-holder {
+            transform: translateY(-5px);
           }
 
           .ant-tabs-tab {
+            display: flex;
+            justify-content: center;
+            width: 50%;
+
             background-color: transparent !important;
-            padding: 5px 24px !important;
+            padding: 5px 24px 10px 24px !important;
+            margin-left: 0 !important;
+            border: none !important;
+
+            &:hover {
+              color: unset;
+            }
           }
 
           .ant-tabs-tab-active {
-            background-color: #ffc918 !important;
+            background-color: #fff !important;
 
             .ant-tabs-tab-btn {
               color: #1b1b1b !important;
@@ -91,14 +138,27 @@ $heightHeader: 40px;
             flex-direction: column;
             justify-content: space-between;
 
-            height: calc(60vh - 105px) !important;
+            height: calc(60vh - 75px) !important;
+            padding: 4px 10px 10px 10px;
+            border-radius: 6px;
             overflow: hidden;
 
+            background-color: #fff;
+
             .title-control {
-              font-size: 12px;
+              // font-size: 12px;
+              font-size: 0.75rem;
+
               font-weight: 500;
               color: #5c5b5b;
               margin-bottom: 0;
+            }
+            .accordion-header {
+              width: 100%; /* Đặt chiều rộng tối đa */
+            }
+
+            .accordion-body {
+              max-width: 100%; /* Đặt chiều rộng tối đa */
             }
 
             .module-container {
@@ -111,15 +171,16 @@ $heightHeader: 40px;
               .module-option {
                 display: flex;
                 flex-direction: row;
+                align-content: start;
                 flex-wrap: wrap;
                 height: 100%;
                 overflow-y: auto;
                 overflow-x: hidden;
 
                 border-radius: 6px;
-                background: #fff;
-                padding: 2px;
-                margin-bottom: 5px;
+                background: #f6f6f6;
+                padding: 4px 0;
+                // margin-bottom: 5px;
 
                 &::-webkit-scrollbar {
                   width: 5px;
@@ -127,6 +188,7 @@ $heightHeader: 40px;
 
                 &::-webkit-scrollbar-track {
                   background-color: #f1f1f1;
+                  border-radius: 6px;
                 }
 
                 &::-webkit-scrollbar-thumb {
@@ -141,9 +203,13 @@ $heightHeader: 40px;
 
               .info {
                 display: flex;
-                flex-direction: row;
-                justify-content: space-between;
-                align-items: center;
+                flex-direction: column;
+                justify-content: start;
+                align-items: start;
+                // display: flex;
+                // flex-direction: row;
+                // justify-content: space-between;
+                // align-items: center;
 
                 font-size: 9px;
                 font-weight: 600;
@@ -153,7 +219,8 @@ $heightHeader: 40px;
                   white-space: nowrap;
                   overflow: hidden;
                   text-overflow: ellipsis;
-                  width: 50px;
+                  width: 100%;
+                  margin-bottom: 10px;
 
                   &:hover {
                     overflow: visible;
@@ -192,18 +259,105 @@ $heightHeader: 40px;
               }
 
               .active {
-                border: 2px solid #ffc918;
+                // border: 2px solid #ffc918;
+                border: 2px solid #fff;
+                box-shadow: 0 0 1px #ffc918, 0 0 2px #ffc918, 0 0 4px #ffc918,
+                  0 0 6px #ffc918;
               }
             }
 
             .materialTexture-container {
               height: 120px;
+              background: #f6f6f6;
+              border-radius: 6px;
+              padding: 0 6px;
 
               @media (max-width: 1280px) {
                 height: 105px;
               }
 
-              .materialTexture-option {
+              .material-option {
+                position: relative;
+                display: flex;
+                flex-direction: row;
+                overflow-x: auto;
+                overflow-y: hidden;
+
+                gap: 8px;
+                border-radius: 6px;
+                background: #f6f6f6;
+                padding: 4px 0;
+                margin-bottom: 5px;
+
+                @media (max-width: 1280px) {
+                  gap: 3px;
+                  padding: 3px;
+                  margin-bottom: 3px;
+                }
+
+                &::-webkit-scrollbar {
+                  height: 5px;
+                }
+
+                &::-webkit-scrollbar-track {
+                  background-color: #f1f1f1;
+                }
+
+                &::-webkit-scrollbar-thumb {
+                  background-color: #888;
+                  border-radius: 6px;
+                }
+
+                &::-webkit-scrollbar-thumb:hover {
+                  background-color: #555;
+                }
+
+                .material-item {
+                  position: relative;
+
+                  display: flex;
+                  justify-content: center;
+                  align-items: center;
+                  // overflow: hidden;
+                  font-size: 11px;
+                  border: 0.5px solid #acacac;
+                  background-color: #bcbcbc;
+                  width: fit-content !important;
+                  white-space: nowrap;
+
+                  border-radius: 16px;
+                  padding: 2px 6px;
+                  cursor: pointer;
+
+                  p {
+                    margin-bottom: 0;
+                    width: fit-content !important;
+                  }
+
+                  .input-box {
+                    position: absolute;
+                    width: 100%;
+                    height: 100%;
+                    text-align: center;
+                    overflow: hidden;
+
+                    input {
+                      position: absolute;
+                      scale: 20;
+                      cursor: pointer;
+                      opacity: 0;
+                    }
+                  }
+                }
+
+                .active,
+                .active > p {
+                  background-color: #5c5b5b;
+                  color: #ffc918 !important;
+                }
+              }
+
+              .texture-option {
                 position: relative;
                 display: flex;
                 flex-direction: row;
@@ -239,37 +393,6 @@ $heightHeader: 40px;
                   background-color: #555;
                 }
 
-                .material-item {
-                  position: relative;
-
-                  display: flex;
-                  justify-content: center;
-                  align-items: center;
-                  overflow: hidden;
-                  font-size: 11px;
-                  border: 2px solid #e6e6e6;
-                  background-color: #f1efef;
-                  width: fit-content !important;
-                  min-width: 80px;
-                  white-space: nowrap;
-
-                  border-radius: 16px;
-                  padding: 2px 4px;
-                  cursor: pointer;
-
-                  p {
-                    margin-bottom: 0;
-                    width: fit-content !important;
-                  }
-
-                  input {
-                    position: absolute;
-                    scale: 20;
-                    cursor: pointer;
-                    opacity: 0;
-                  }
-                }
-
                 .texture-item {
                   min-width: 45px !important;
                   height: 45px !important;
@@ -303,7 +426,10 @@ $heightHeader: 40px;
                 }
 
                 .active {
-                  border: 2px solid #ffc918;
+                  // border: 2px solid #ffc918;
+                  border: 2px solid #fff;
+                  box-shadow: 0 0 1px #ffc918, 0 0 2px #ffc918, 0 0 4px #ffc918,
+                    0 0 6px #ffc918;
                 }
               }
             }
@@ -342,8 +468,14 @@ $heightHeader: 40px;
 
     #container__canvas {
       position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
       width: 70%;
-      height: 99%;
+      // width: 100%;
+      overflow: hidden;
 
       // div {
       //   display: none !important;
@@ -352,11 +484,6 @@ $heightHeader: 40px;
       .spinner-container,
       .loading-spinner {
         position: absolute;
-      }
-
-      #myThreeJsCanvas {
-        width: 100% !important;
-        height: 100% !important;
       }
     }
   }

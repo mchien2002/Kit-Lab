@@ -1,0 +1,68 @@
+.profile{
+    display: flex;
+    flex-direction: column;
+}
+.background {
+    width: 100%; 
+    z-index: -1;
+  }
+  
+  .position-relative {
+    position: relative;
+    display: flex;
+    height: 80%;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .overlay-image {
+    position: absolute;
+    top: 20%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 30%;
+    z-index: 1;
+  }
+  
+  .text-below-overlay {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 400;
+    position: absolute;
+    top: 30%;
+    text-align: center;
+    color: rgb(34, 33, 33);
+    width: 100%;
+  }
+  .img-my-design{
+    width: 100%;
+  }
+  .my-profile-title{
+    font-family: 'Montserrat', sans-serif;
+    font-size: large;
+    font-weight: 700;
+    color: rgb(0, 0, 0);
+  }
+  .image-container {
+    position: relative;
+  }
+  
+  .icon-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .add-icon {
+    align-items: center;
+  }
+  .text-add-design{
+    text-align: center; 
+    margin-top: 10px;
+  }
+  
+  
+  

@@ -62,6 +62,14 @@
   font-size: 12px;
   line-height: 16px;
   font-weight: 600;
+
+  svg {
+    margin-right: 3px;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+  }
 }
 
 .btn-nextStep {
@@ -73,6 +81,37 @@
   cursor: pointer;
   font-size: 12px;
   font-weight: 600;
+}
+
+.btn-submit {
+  display: flex;
+  flex-direction: row-reverse;
+  gap: 6px;
+  align-items: center;
+
+  border-radius: 5px;
+  background-color: #ffc918;
+  padding: 8px 48px;
+  border: none;
+  outline: none;
+  color: #414549;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  .ant-btn-icon {
+    margin: 0 !important;
+  }
+
+  &:hover,
+  &:focus {
+    background-color: #ffc918 !important;
+    color: #414549 !important;
+    cursor: pointer;
+    transform: translateY(-0.15rem);
+    transition-delay: 0.1s;
+    box-shadow: 0rem 0.25rem 0.75rem rgb(30 34 40 / 15%);
+  }
 }
 
 .btnShowHide {
@@ -94,6 +133,18 @@
   }
 }
 
+.btn-save {
+  padding: 4px 16px;
+  border: none;
+  border-radius: 4px;
+  background: #ffc914;
+  outline: none;
+
+  color: #414549;
+  font-size: 16px;
+  font-weight: 600;
+}
+
 p {
   margin-bottom: 10px;
 }
@@ -102,10 +153,149 @@ p {
   font-size: 12px;
   color: #939393;
   margin-bottom: 0;
-  padding: 20px 0;
+  padding: 30px 0;
   text-align: center;
 }
 
 .selected-object {
   border: 2px solid red;
+}
+
+.swal2-title {
+  font-size: 16px;
+}
+
+.swal2-actions {
+  button {
+    padding: 4px 12px;
+  }
+
+  .swal2-confirm {
+    background-color: #ffc918;
+
+    &:focus {
+      box-shadow: 0 0 0 3px #fce28e;
+    }
+  }
+}
+
+.ant-dropdown-trigger {
+  color: #1b1b1b !important;
+
+  &:hover {
+    color: #ffdb62 !important;
+  }
+}
+
+.ant-tree-select {
+  &:where(.css-dev-only-do-not-override-nllxry) {
+    .ant-select:not(
+        .ant-select-disabled,
+        .ant-select-customize-input,
+        .ant-pagination-size-changer
+      ):hover
+      .ant-select-selector {
+      border-color: #ffdb62;
+    }
+  }
+}
+
+.ant-select-selector,
+.ant-select-selection-item {
+  text-align: center;
+
+  &:hover {
+    border-color: #ffdb62 !important;
+    box-shadow: none !important;
+  }
+}
+
+.ant-select-focused.ant-select:not(ant-select-disabled):not(
+    .ant-select-customize-input
+  ):not(.ant-pagination-size-changer)
+  .ant-select-selector {
+  border-color: #ffdb62 !important;
+  box-shadow: none !important;
+}
+
+.ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+  background-color: #fffae8 !important;
+  font-weight: 500 !important;
+}
+
+.ant-select-dropdown-menu {
+  height: 200px !important;
+  overflow-y: auto !important;
+}
+
+.ant-tooltip-content {
+  .ant-tooltip-inner {
+    font-size: 12px !important;
+    color: #565e64 !important;
+    background-color: #fff !important;
+    padding: 4px 8px !important;
+    border-radius: 4px;
+    box-shadow: 0px 4px 8px 0px rgba(58, 56, 49, 0.1),
+      0px 0px 2px 0px rgba(58, 56, 49, 0.14);
+  }
+}
+
+.ant-tooltip-arrow {
+  &:before {
+    background: #fff !important;
+  }
+}
+
+/* Thay đổi màu của cascader */
+.ant-cascader-menu-item {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+
+  text-align: start !important;
+  color: #565e64 !important;
+  width: 200px;
+}
+
+.ant-cascader-menu-item-active,
+.ant-cascader-menu-item-selected {
+  text-align: start !important;
+  background-color: #fffae8 !important;
+  color: #565e64 !important;
+}
+/* Thay đổi màu của cascader */
+
+/* Thay đổi màu của search */
+.ant-input-group {
+  .ant-input-affix-wrapper {
+    &:hover,
+    &:focus,
+    &:focus-within {
+      border-color: #ffdb62 !important;
+      box-shadow: 0 0 0 2px rgb(231 216 100 / 10%) !important;
+    }
+  }
+
+  .ant-input-search-button:not(.ant-btn-primary):hover {
+    color: #ffdb62 !important;
+  }
+
+  .ant-input-group-addon {
+    button {
+      &:hover {
+        border-color: #ffdb62 !important;
+
+        svg {
+          color: #ffdb62 !important;
+        }
+      }
+    }
+  }
+}
+/* Thay đổi màu của search */
+
+.ant-select-dropdown {
+  max-height: 200px; /* Thiết lập chiều cao tối đa */
+  overflow-y: auto; /* Hiển thị thanh trượt dọc khi nội dung vượt quá */
 }

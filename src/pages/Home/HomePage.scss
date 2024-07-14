@@ -1,18 +1,204 @@
 .homepage {
   display: flex;
   flex-direction: column;
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
+  // position: absolute;
+  // top: 50%;
+  // transform: translateY(-50%);
+  // padding: 60px 0 30px 0;
 
-  .option-container {
-    img {
-      cursor: pointer;
+  .featured {
+    background-image: url(../../../public/assets/images/bg-home.png);
+    background-size: cover;
+    background-repeat: no-repeat;
+    padding: 40px 80px;
+
+    .featured-left {
+      gap: 16px;
+      border-right: 1px solid #e5e7e8;
+      padding-right: 24px;
+
+      .active {
+        // background-color: #fffae8 !important;
+        background-color: #ffdf74 !important;
+
+        i {
+          // background-color: #ffdb62 !important;
+          background-color: #ffc914 !important;
+        }
+      }
+
+      .type-card {
+        padding: 8%;
+        border-radius: 4px;
+        background-color: #fff;
+        box-shadow: 0px 8px 20px 0px rgba(58, 56, 49, 0.1),
+          0px -1px 8px 0px rgba(58, 56, 49, 0.1);
+        transition: all ease-in-out 0.3s;
+        cursor: pointer;
+
+        &:hover {
+          background-color: #fffae8;
+
+          .type-card__text {
+            i {
+              background-color: #ffeeb6;
+            }
+          }
+        }
+
+        &__text {
+          display: flex;
+          flex-direction: row;
+          justify-content: space-between;
+          align-items: start;
+
+          span {
+            word-spacing: 100vw;
+            color: #565e64;
+            font-size: 20px;
+            font-weight: 600;
+          }
+
+          i {
+            border-radius: 50%;
+            background-color: transparent;
+            padding: 11px 12px;
+            transition: all ease-in-out 0.3s;
+          }
+        }
+
+        &__image {
+          width: 100%;
+          object-fit: cover;
+          padding: 16px 20%;
+        }
+      }
     }
 
-    .option-name {
+    .featured-right {
+      padding-left: 24px;
+
+      .intro {
+        color: #808b90;
+        font-size: 12px;
+        font-weight: 500;
+      }
+
+      .room-card {
+        padding: 12px;
+        border-radius: 4px;
+        background-color: transparent;
+        box-shadow: none;
+        transition: all ease-in-out 0.3s;
+        cursor: pointer;
+
+        &:hover {
+          background-color: #fff;
+          box-shadow: 0px 8px 20px 0px rgba(58, 56, 49, 0.1),
+            0px -1px 8px 0px rgba(58, 56, 49, 0.1);
+
+          .room-card__text {
+            i {
+              border: 1px solid #ffdb62;
+              background-color: #ffeeb6;
+            }
+          }
+        }
+
+        &__text {
+          display: flex;
+          flex-direction: row;
+          justify-content: space-between;
+          align-items: center;
+          margin-top: 12px;
+
+          span {
+            color: #565e64;
+            font-size: 14px;
+            font-weight: 600;
+          }
+
+          i {
+            border: 1px solid #cdd1d4;
+            border-radius: 50%;
+            padding: 8px 9px;
+            background-color: transparent;
+            transition: all ease-in-out 0.3s;
+          }
+        }
+
+        &__image {
+          width: 100%;
+          object-fit: cover;
+          border-radius: 4px;
+        }
+      }
+    }
+  }
+
+  .my-design {
+    background-color: #faf8f2;
+    padding: 20px 80px;
+
+    &__heading {
       font-size: 20px;
-      font-weight: 500;
+      font-weight: 600;
+    }
+
+    &__all {
+      font-size: 14px;
+      font-weight: 600;
+      color: #ffc914;
+      cursor: pointer;
+
+      &:hover {
+        color: #ffd443;
+      }
+    }
+
+    &__card {
+      display: flex;
+      flex-direction: column;
+
+      background-color: #fff;
+      padding: 10px;
+      border-radius: 4px;
+      transition: all ease-in-out 0.3s;
+      cursor: pointer;
+
+      &:hover {
+        box-shadow: 0px 8px 20px 0px rgba(58, 56, 49, 0.1),
+          0px -1px 8px 0px rgba(58, 56, 49, 0.1);
+      }
+
+      .card-image {
+        width: 100%;
+        object-fit: cover;
+        border-radius: 4px;
+      }
+
+      .card-tag {
+        font-size: 10px;
+        font-weight: 500;
+        margin-top: 12px;
+        margin-bottom: 0;
+        background-color: #f5f6f6;
+        width: fit-content;
+        padding: 2px 8px;
+      }
+
+      .card-name {
+        font-size: 14px;
+        font-weight: 600;
+        margin-top: 8px;
+        margin-bottom: 0;
+      }
+
+      .card-time {
+        font-size: 12px;
+        font-weight: 500;
+        color: #aab2b6;
+      }
     }
   }
 }

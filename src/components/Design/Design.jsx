@@ -1,64 +1,74 @@
-import { useEffect, useState, createContext, useRef } from "react";
 import { usePrevious } from "@uidotdev/usehooks";
-import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry.js";
-import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
-import { Tabs } from "antd";
+import { Tabs, TreeSelect } from "antd";
+import Cookies from "js-cookie";
+import { Select } from "antd";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { IoEyeOutline } from "react-icons/io5";
 import { LuCornerUpLeft, LuCornerUpRight, LuSave } from "react-icons/lu";
-import { FaChevronDown } from "react-icons/fa";
-import { RiDeleteBinLine } from "react-icons/ri";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
+import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
+import { v4 as uuidv4 } from "uuid";
+import { AppContext } from "../../App";
 import SceneInit from "../../lib/SceneInit";
-import { getAllStepAction } from "../../store/actions/steps.action";
-import { getStepDetailAction } from "../../store/actions/stepDetail.action";
-import { getStepEditDetailAction } from "../../store/actions/stepEditDetail.action";
 import { getMaterialAction } from "../../store/actions/material.action";
 import { getTextureAction } from "../../store/actions/texture.action";
+import { getTrademarksAction } from "../../store/actions/trademarks.action ";
 import {
-  countScale,
-  countDesignUnit,
+  calculateFormula,
+  calculateMeasure,
+  calculatePrice,
+  calculateTotalIndexDesign,
+  changeWardrobeType,
+  countCurrentTotalDesign,
+  countImpactModulePosition,
+  draw,
+  myRound,
+  drawStep,
+  getGLBSize,
   handleChangeTexture,
-  handleAddBackground,
+  handleDeleteTexture,
   handleMouseDown,
   handleMouseMove,
   handleMouseUp,
-  handleMouseHover,
-  countBaseMeasure,
-  shiftArrayElements,
-  removeModule3D,
-  removeLastModule,
+  isExistModuleWife,
   onlyRemoveModule,
-  calculateTotalIndexDesign,
-  calculateTotalPrice,
-  countTotalDesign,
-  countCurrentTotalDesign,
   refresh3D,
-  setCounterTop,
-  getGLBSize,
+  refreshMBVBScale,
+  refreshModuleImpact,
   refreshModuleScale,
+  reloadGLTFModel,
+  scaleRequireModule,
+  setCounterTop,
+  setTemporaryOpacity,
 } from "../../utils/function";
-import SelectedItem from "../SelectedItem/SelectedItem.jsx";
-import "./Design.scss";
-import MainOption from "../Option/MainOption";
-import SubOption from "../Option/SubOption";
-import Loading from "../Loading/Loading";
-import Zoom from "../Zoom/Zoom";
 import BoxSize from "../BoxSize/BoxSize";
-import { toast } from "react-hot-toast";
+import Loading from "../Loading/Loading";
+import MainOption from "../Option/MainOption.jsx";
+import SubOption from "../Option/SubOption";
+import ReviewDesign from "../Popup/ReviewDesign.jsx";
+import SelectedItem from "../SelectedItem/SelectedItem.jsx";
 import Visible from "../Visible/Visible";
-import { v4 as uuidv4 } from "uuid";
+import Zoom from "../Zoom/Zoom";
+import "./Design.scss";
+import callApi from "../../utils/callApi.js";
+import { getPriceDetail, getTabDetail } from "../../utils/getData.js";
 
 export const KitchenContext = createContext();
 
-const scale = 30;
+const scale = 1;
+
+const X = 5.099999880382116;
+const Y = 3.3000010476221315;
+const Z = 5.120000903247968;
 
 let isMouseDown = false;
 
 var display = null;
-const glftLoader = new GLTFLoader();
+// const glftLoader = new GLTFLoader();
 const textureLoader = new THREE.TextureLoader();
 
 const mainNull = {
@@ -87,16 +97,24 @@ const TypeModule = {
   NULL_MODULE: 6,
 };
 
+const gltfProp = [
+  "uuid",
+  "parent",
+  "children",
+  "position",
+  "scale",
+  "useData",
+  "size",
+];
+let listStepDetail = [];
+
 export default function Design() {
+  const appContext = useContext(AppContext);
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const [defaultZoom, setDefaultZoom] = useState(35);
   const [tabOption, setTabOption] = useState("0");
-
-  const [cabinetLatest, setCabinetLatest] = useState(null);
-  const [doorLatest, setDoorLatest] = useState(null);
-  const [measureLatest, setMeasureLatest] = useState(null);
 
   const [currentStep, setCurrentStep] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -104,11 +122,19 @@ export default function Design() {
   const prevCurrentIndex = usePrevious(currentIndex);
 
   const [currentDU, setCurrentDU] = useState(0);
+  // const [isPB, setIsPB] = useState(localStorage.getItem("isPB") || false);
+  const [isPB, setIsPB] = useState(false);
 
   const [dependentStep, setDependentStep] = useState(null);
   const [typeModuleId, setTypeModuleId] = useState(null);
+  const [typePrice, setTypePrice] = useState(null);
 
   const [recommended, setRecommended] = useState({
+    moduleType: null,
+    material: null,
+    texture: null,
+  });
+  const [subRecommended, setSubRecommended] = useState({
     moduleType: null,
     material: null,
     texture: null,
@@ -120,52 +146,404 @@ export default function Design() {
   const [executingTotalDU, setExecutingTotalDU] = useState(0);
   const [executingModule, setExecutingModule] = useState();
 
-  const [DUR, setDUR] = useState(0);
-  const [DUL, setDUL] = useState(0);
-  const [scaleRight, setScaleRight] = useState();
-  const [scaleLeft, setScaleLeft] = useState();
-  const [baseMeasureRight, setBaseMeasureRight] = useState(0);
-  const [baseMeasureLeft, setBaseMeasureLeft] = useState(0);
+  const [checkChange, setCheckChange] = useState(false);
 
   const [modelClicked, setModelClicked] = useState(null);
 
   const [mainSelected, setMainSelected] = useState(null);
   const [subSelected, setSubSelected] = useState(null);
 
+  const [wallHeight, setWallHeight] = useState(null);
+
   const [tabSelected, setTabSelected] = useState({ step: null, index: null });
+  const [checkReload, setCheckReload] = useState(true);
+  const [refreshTotal, setRefreshTotal] = useState(false);
+
   let [indexSub, setIndexSub] = useState(null);
+
+  const [trademark, setTrademark] = useState();
 
   const [mainModule, setMainModule] = useState(mainNull);
   const prevMainModule = usePrevious(mainModule);
   const [subModule, setSubModule] = useState(subNull);
   const prevSubModule = usePrevious(subModule);
   const [lstSubModule, setLstSubModule] = useState(null);
-  const prevLstSubModule = usePrevious(lstSubModule);
 
   const [lstSub, setLstSub] = useState(null);
+  const [baseLstSub, setBaseLstSub] = useState(null);
   const [lstTab, setLstTab] = useState(["Cabinet"]);
+  const [baseLstTab, setBaseLstTab] = useState(["Cabinet"]);
+  const [infoTab, setInfoTab] = useState();
+  const [baseInfoTab, setBaseInfoTab] = useState(null);
+
+  const [subAPI, setSubAPI] = useState(null);
+
+  const [stepDetail, setStepDetail] = useState(null);
 
   const [isLoading, setIsLoading] = useState(false);
 
   const [showBoxSize, setShowBoxSize] = useState(false);
   const [showVisible, setShowVisible] = useState(false);
   const [showNextStep, setShowNextStep] = useState(false);
+  const [showPopupSave, setShowPopupSave] = useState(false);
 
-  const { stepDetail } = useSelector((state) => state.stepDetail);
+  const [bgColor, setBgColor] = useState("#afb6ba");
+
+  const [textureMB, setTextureMB] = useState();
+  const [textureVB, setTextureVB] = useState();
+  let [kitchen, setKitchen] = useState([]);
+
+  const trademarkRef = useRef();
+  const canvasRef = useRef(null);
+
   const { lstMaterial } = useSelector((state) => state.material);
   const { lstTexture } = useSelector((state) => state.texture);
-  const lstMeasure = JSON.parse(localStorage.getItem("measure"));
-  const productInfo = JSON.parse(localStorage.getItem("productInfo"));
-  const [kitchen, setKitchen] = useState([]);
+  const { trademarks } = useSelector((state) => state.trademarks);
 
-  const onChange = (key) => {
+  const [canInside, setCanInside] = useState(appContext.canInside);
+
+  const [trenTrai, setTrenTrai] = useState(0);
+  const [trenPhai, setTrenPhai] = useState(0);
+  const [duoiTrai, setDuoiTrai] = useState(0);
+  const [duoiPhai, setDuoiPhai] = useState(0);
+
+  const location = useLocation();
+  const { type } = location.state || {};
+  const { formData } = location.state || {};
+  const { productData } = location.state || {};
+  const { productChangeData } = location.state || {};
+  const { newProduct } = location.state || {};
+  let productInfoChange = productChangeData;
+  let [productInfo, setProductInfo] = useState(productData);
+  const [fromDataNew, setFromDataNew] = useState(0);
+  let isSizeChange = false;
+
+  const typeOption = [
+    {
+      value: false,
+      title: "Tủ áo lọt lòng",
+      children: [],
+    },
+    {
+      value: true,
+      title: "Tủ áo phủ bì",
+      children: [],
+    },
+  ];
+
+  useEffect(() => {
+    let newKitchen = [...kitchen];
+
+    if (newKitchen[currentStep]?.lstModule && infoTab) {
+      newKitchen[currentStep].lstModule[currentIndex].tabs = infoTab;
+
+      setKitchen(newKitchen);
+    }
+  }, [infoTab]);
+
+  useEffect(() => {
+    if (productInfoChange) {
+      for (let step in productInfoChange.listStep) {
+        const stepOld = productInfo.listStep.find(
+          (item) => item._id === productInfoChange.listStep[step]._id
+        );
+        if (
+          stepOld.designUnit !== productInfoChange.listStep[step].designUnit
+        ) {
+          const confirmReload = window.confirm(
+            "Bạn có muốn xóa tất cả và làm lại không?"
+          );
+          if (confirmReload === true) {
+            isSizeChange = true;
+            break;
+          } else {
+            localStorage.removeItem("productInfoChange");
+          }
+        }
+      }
+      if (isSizeChange === true) {
+        localStorage.removeItem("productInfo");
+        localStorage.setItem("productInfo", newProduct);
+        localStorage.removeItem("productInfoChange");
+        localStorage.removeItem("executing");
+        setProductInfo(productInfoChange);
+        window.location.reload();
+      } else {
+        localStorage.removeItem("productInfo");
+        localStorage.setItem("productInfo", newProduct);
+        recalculateModules(productInfoChange);
+        localStorage.removeItem("productInfoChange");
+      }
+    }
+  }, [display, productInfoChange]);
+
+  const recalculateModules = (productInfoChange) => {
+    let newKitchen = [...kitchen];
+    let measureCount = 0;
+    newKitchen.forEach(async (item, index) => {
+      if (item.measure !== null) {
+        let checkTD = false;
+        item.lstModule.forEach((module) => {
+          if (module.mainModule?.module?.type === TypeModule.LOVER_MODULE) {
+            checkTD = true;
+          }
+        });
+
+        if (checkTD) {
+          item.scale = item.scaleOriginal;
+          item.scaleOriginal = productInfoChange.listStep[index].scale;
+        } else {
+          item.scale = productInfoChange.listStep[index].scale;
+          item.scaleOriginal = productInfoChange.listStep[index].scale;
+        }
+        item.measure = productInfoChange.listStep[index].actualSize.width;
+        let widthReset;
+        if (
+          productInfoChange?.typeProduct === 5 ||
+          productInfoChange?.typeProduct === 6
+        ) {
+          if (item.baseScale === true) {
+            widthReset =
+              item.designUnitOriginal * 425 * item.scaleOriginal + 600;
+          } else {
+            widthReset = item.designUnit * 425 * item.scaleOriginal + 600;
+          }
+        } else if (
+          productInfoChange?.typeProduct === 3 ||
+          productInfoChange?.typeProduct === 4
+        ) {
+          widthReset = item.designUnitOriginal * 425 * item.scaleOriginal + 600;
+        }
+        // console.log(widthReset);
+        let DU = item.designUnit;
+        item.lstModule.forEach((module) => {
+          if (module.mainModule?.module?.type === TypeModule.LOVER_MODULE) {
+            widthReset -= module.mainModule?.measure?.w;
+            DU -= module.mainModule?.module?.indexDesign;
+          }
+        });
+        // console.log(widthReset);
+        item.lstModule.forEach(async (module) => {
+          // const newScale = countScale(widthReset, DU);
+          const newScale = calculateFormula(
+            item.formulaScale,
+            item.measure,
+            0,
+            0,
+            DU
+          );
+
+          if (module.mainModule?.module?.type !== TypeModule.LOVER_MODULE) {
+            if (module.mainModule?.measure) {
+              module.mainModule.measure.w =
+                425 * newScale * module.mainModule.indexDesign +
+                (module.mainModule.widthExtra || 0);
+              // console.log(module.mainModule.unitPrice);
+              if (module.mainModule.unitPrice !== undefined) {
+                module.mainModule.price = calculatePrice(
+                  module.mainModule.unitPrice?.formulaPrice,
+                  module.mainModule.measure.w,
+                  module.mainModule.measure.h,
+                  module.mainModule.measure.d,
+                  module.mainModule.unitPrice?.priceValue
+                );
+              }
+            }
+          }
+        });
+
+        if (
+          productInfoChange?.typeProduct === 5 ||
+          productInfoChange?.typeProduct === 6
+        ) {
+          if (item.name === "Bếp dưới") {
+            item.lstModule.forEach(async (module) => {
+              if (module.mainModule !== null) {
+                if (
+                  module.mainModule?.module?.type !== TypeModule.IMPACT_MODULE
+                ) {
+                  measureCount += module?.mainModule?.measure?.w;
+                  // console.log(module.mainModule.measure);
+                  // console.log(module.mainModule.measure.w);
+                }
+              }
+            });
+          }
+        } else if (
+          productInfoChange?.typeProduct === 3 ||
+          productInfoChange?.typeProduct === 4
+        ) {
+          if (item.name === "Bếp dưới phải") {
+            item.lstModule.forEach(async (module) => {
+              if (module.mainModule !== null) {
+                if (
+                  module.mainModule?.module?.type !== TypeModule.IMPACT_MODULE
+                ) {
+                  measureCount += module?.mainModule?.measure?.w;
+                }
+              }
+            });
+          }
+          if (item.name === "Bếp dưới trái") {
+            item.lstModule.forEach(async (module) => {
+              if (module.mainModule !== null) {
+                if (
+                  module.mainModule?.module?.type !== TypeModule.IMPACT_MODULE
+                ) {
+                  measureCount += module?.mainModule?.measure?.w;
+                }
+              }
+            });
+          }
+        }
+      } else {
+        if (item.lstModule.length !== undefined) {
+          if (
+            productInfoChange?.typeProduct === 5 ||
+            productInfoChange?.typeProduct === 6
+          ) {
+            if (item.lstModule[0].mainModule !== null) {
+              item.lstModule[0].mainModule.measure = measureCount;
+            }
+            // item.lstModule.forEach(async (module) => {
+
+            // });
+            // item.lstModule[0].mainModule.measure =
+            //   productInfoChange.listStep[0].actualSize.width;
+          } else if (
+            productInfoChange?.typeProduct === 3 ||
+            productInfoChange?.typeProduct === 4
+          ) {
+            if (item.lstModule[0].mainModule !== null) {
+              if (item.name === "Mặt bếp") {
+                item.lstModule[0].mainModule.measure = measureCount;
+              } else {
+                item.lstModule[0].mainModule.measure = measureCount + 600;
+              }
+            }
+          }
+        }
+
+        let measureTemp = {
+          w: item.lstModule[0].mainModule?.measure,
+          h: 5,
+          d: 600,
+        };
+        //console.log(item.lstModule[0].mainModule.unitPrice);
+        if (item.lstModule[0].mainModule?.unitPrice !== undefined) {
+          item.lstModule[0].mainModule.price = calculatePrice(
+            item.lstModule[0].mainModule?.unitPrice?.formulaPrice,
+            measureTemp.w,
+            measureTemp.h,
+            measureTemp.d,
+            item.lstModule[0].mainModule?.unitPrice?.priceValue
+          );
+        }
+      }
+    });
+    setKitchen(newKitchen);
+    if (display) {
+      kitchen.forEach((step, index) => {
+        refresh3D(
+          canInside,
+          isPB,
+          display,
+          index,
+          productInfo,
+          kitchen,
+          trademark?.value
+        );
+        refreshModuleImpact(display, kitchen, index);
+        const stepId = kitchen[currentStep].stepId;
+        refreshMBVBScale(
+          display,
+          index,
+          productInfo,
+          kitchen,
+          stepId,
+          textureVB
+        );
+      });
+    }
+  };
+
+  const handleBgColorChange = (event) => {
+    setBgColor(event.target.value);
+  };
+
+  const handleChangeType = (value) => {
+    setIsPB(value);
+
+    changeWardrobeType(display, kitchen, canInside, value);
+  };
+
+  const handleChangeTrademark = (lable, option) => {
+    const value = {
+      value: option.key,
+      pValue: option.trademarkBrandId,
+      label: option.children,
+    };
+
+    if (trademark) {
+      if (trademark.value !== option.key) {
+        Swal.fire({
+          title:
+            "Nếu thay đổi nhà cung cấp thì sẽ bỏ hết phần vật liệu, màu sắc bạn đã chọn và chỉ giữ lại module?",
+          showCancelButton: true,
+          confirmButtonText: "OK",
+          cancelButtonText: "Cancel",
+        }).then((result) => {
+          if (result.isConfirmed) {
+            setTrademark(value);
+
+            let newKitchen = [...kitchen];
+
+            newKitchen.map((step) => {
+              step.lstModule.map((item) => {
+                if (item.mainModule !== null) {
+                  item.mainModule.material = null;
+                  item.mainModule.texture = null;
+                  item.mainModule.price = null;
+
+                  handleDeleteTexture(item.mainModule.gltf, 0, 1);
+                }
+
+                if (item.lstSubModule.length > 0) {
+                  item.lstSubModule.map((sub) => {
+                    sub.material = null;
+                    sub.texture = null;
+                    sub.price = null;
+
+                    handleDeleteTexture(sub.gltf, 0, 1);
+                  });
+                }
+              });
+            });
+
+            setKitchen(newKitchen);
+          }
+        });
+      }
+    } else {
+      setTrademark(value);
+    }
+  };
+
+  const handleChangeTab = async (key) => {
+    const tabDetail = await getTabDetail(
+      infoTab[key]._id,
+      infoTab[key].pId,
+      trademark?.value
+    );
+    console.log(tabDetail);
+    setSubAPI(tabDetail);
+
     if (!isLoading) {
       setTabOption(key);
       if (parseInt(key) !== 0) {
         setIndexSub(key - 1);
-        // setIndexSub(parseInt(key));
 
-        if (tabSelected.step !== null) {
+        if (tabSelected.step !== null && lstSubModule?.length > 0) {
           setSubModule(lstSubModule[key - 1]);
           setSubSelected(lstSubModule[key - 1]);
         } else if (
@@ -199,174 +577,251 @@ export default function Design() {
     // setExecutingModule(null);
   };
 
-  const getSizeModule = (module) => {
-    // Get the bounding box of the model
-    const boundingBox = new THREE.Box3().setFromObject(module);
-
-    // Calculate the vertices of the bounding box
-    const minPoint = boundingBox.min;
-    const maxPoint = boundingBox.max;
-
-    const boxVertices = [
-      {
-        o: new THREE.Vector3(minPoint.x, minPoint.y, minPoint.z),
-        x: new THREE.Vector3(minPoint.x + 5, minPoint.y, minPoint.z),
-        z: new THREE.Vector3(minPoint.x, minPoint.y, minPoint.z + 5),
-      },
-      {
-        o: new THREE.Vector3(minPoint.x, minPoint.y, maxPoint.z),
-        x: new THREE.Vector3(minPoint.x + 5, minPoint.y, maxPoint.z),
-        z: new THREE.Vector3(minPoint.x, minPoint.y, maxPoint.z + 5),
-      },
-      {
-        o: new THREE.Vector3(maxPoint.x, minPoint.y, maxPoint.z),
-        x: new THREE.Vector3(maxPoint.x + 5, minPoint.y, maxPoint.z),
-        z: new THREE.Vector3(maxPoint.x, minPoint.y, maxPoint.z + 5),
-      },
-      {
-        o: new THREE.Vector3(maxPoint.x, minPoint.y, minPoint.z),
-        x: new THREE.Vector3(maxPoint.x + 5, minPoint.y, minPoint.z),
-        z: new THREE.Vector3(maxPoint.x, minPoint.y, minPoint.z + 5),
-      },
-      {
-        o: new THREE.Vector3(minPoint.x, maxPoint.y, minPoint.z),
-        x: new THREE.Vector3(minPoint.x + 5, maxPoint.y, minPoint.z),
-        z: new THREE.Vector3(minPoint.x, maxPoint.y, minPoint.z + 5),
-      },
-      {
-        o: new THREE.Vector3(minPoint.x, maxPoint.y, maxPoint.z),
-        x: new THREE.Vector3(minPoint.x + 5, maxPoint.y, maxPoint.z),
-        z: new THREE.Vector3(minPoint.x, maxPoint.y, maxPoint.z + 5),
-      },
-      {
-        o: new THREE.Vector3(maxPoint.x, maxPoint.y, maxPoint.z),
-        x: new THREE.Vector3(maxPoint.x + 5, maxPoint.y, maxPoint.z),
-        z: new THREE.Vector3(maxPoint.x, maxPoint.y, maxPoint.z + 5),
-      },
-      {
-        o: new THREE.Vector3(maxPoint.x, maxPoint.y, minPoint.z),
-        x: new THREE.Vector3(maxPoint.x + 5, maxPoint.y, minPoint.z),
-        z: new THREE.Vector3(maxPoint.x, maxPoint.y, minPoint.z + 5),
-      },
-    ];
-
-    return boxVertices;
-  };
-
-  const draw = (arr, width, height, depth) => {
-    const group = new THREE.Group();
-
-    const material = new THREE.LineBasicMaterial({
-      color: 0x00ffff,
-      linewidth: 10,
-      linecap: "round",
-      linejoin: "round",
-    });
-
-    let linesData = [
-      [
-        { startIdx: arr[1].o, endIdx: arr[1].z },
-        { startIdx: arr[2].o, endIdx: arr[2].z },
-        { startIdx: arr[1].z, endIdx: arr[2].z, text: `${width}mm` },
-      ],
-      [
-        { startIdx: arr[2].o, endIdx: arr[2].x },
-        { startIdx: arr[6].o, endIdx: arr[6].x },
-        { startIdx: arr[2].x, endIdx: arr[6].x, text: `${height}mm` },
-      ],
-      [
-        { startIdx: arr[2].o, endIdx: arr[2].x },
-        { startIdx: arr[3].o, endIdx: arr[3].x },
-        { startIdx: arr[2].x, endIdx: arr[3].x, text: `${depth}mm` },
-      ],
-    ];
-
-    const fontLoader = new FontLoader();
-    fontLoader.load("./fonts/roboto.json", (font) => {
-      const textOptions = {
-        font: font,
-        size: 1,
-        height: 0.1,
-        curveSegments: 12,
-        bevelEnabled: false,
-      };
-
-      const textMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
-
-      linesData.forEach((data) => {
-        data.forEach((item) => {
-          const points = [item.startIdx, item.endIdx];
-
-          // const geometry = new THREE.BufferGeometry().setFromPoints(points);
-          var tubeGeometry = new THREE.TubeGeometry(
-            new THREE.CatmullRomCurve3(points),
-            512, // path segments
-            0.15, // THICKNESS
-            5, //Roundness of Tube
-            false //closed
-          );
-          const line = new THREE.Line(tubeGeometry, material);
-
-          // line.name = "MEASURE";
-          group.add(line);
-
-          if (item.text) {
-            const textGeometry = new TextGeometry(item.text, textOptions);
-            const textMesh = new THREE.Mesh(textGeometry, textMaterial);
-
-            const midPoint = points[0]
-              .clone()
-              .add(points[1])
-              .multiplyScalar(0.5);
-            // textMesh.position.copy(midPoint);
-            // textMesh.name = "MEASURE";
-            midPoint.x += 1;
-            midPoint.y += 1;
-            midPoint.z += 1;
-
-            textMesh.position.copy(midPoint);
-
-            group.add(textMesh);
-          }
-        });
-      });
-
-      group.name = "MEASURE";
-      group.visible = false;
-      setMeasureLatest(group);
-      display.scene.add(group);
-      display.listGroupMeasure.push(group);
-    });
-  };
-
   const resetBaseScale = () => {
     const listStepReset = kitchen.filter((item) => item.baseScale === true);
-
     listStepReset.forEach((step) => {
-      let widthReset = step.designUnitOriginal * 425 * step.scaleOriginal + 600;
+      // let widthReset = step.measure;
+      let widthReset = step.baseMeasure;
       let DU = step.designUnit;
+
       step.lstModule.forEach((module) => {
-        if (module.mainModule?.module?.type === TypeModule.LOVER_MODULE) {
-          widthReset -= 800;
+        if (
+          module.mainModule?.module !== null &&
+          module.mainModule?.module?.type === TypeModule.LOVER_MODULE
+        ) {
+          widthReset -= module.mainModule?.measure?.w;
           DU -= module.mainModule?.module?.indexDesign;
         }
       });
 
-      const newScale = countScale(widthReset, DU);
+      const newScale = calculateFormula(
+        step.formulaScale,
+        widthReset,
+        0,
+        0,
+        DU
+      );
       step.scale = newScale;
 
-      let lstStepDependent = kitchen.filter(
+      step.lstModule.forEach(async (module) => {
+        if (
+          module.mainModule !== null &&
+          module.mainModule?.module?.type !== TypeModule.SCALE_MODULE &&
+          module.mainModule?.module?.type !== TypeModule.LOVER_MODULE
+        ) {
+          const newMeasure = calculateMeasure(
+            module.mainModule.actualSize.width,
+            0,
+            0,
+            0,
+            newScale,
+            module.mainModule.indexDesign
+          );
+
+          module.mainModule.measure.w = newMeasure;
+        }
+
+        if (
+          module.mainModule?.material !== null &&
+          module.mainModule?.priceId
+        ) {
+          let newPrice;
+
+          if (module.mainModule?.measure) {
+            newPrice = calculatePrice(
+              module.mainModule.unitPrice?.formulaPrice,
+              module.mainModule.measure.w,
+              module.mainModule.measure.h,
+              module.mainModule.measure.d,
+              module.mainModule.unitPrice?.priceValue
+            );
+
+            module.mainModule.price = newPrice;
+          }
+        }
+
+        if (module.lstSubModule && module.lstSubModule.length > 0) {
+          module.lstSubModule.forEach(async (sub) => {
+            if (sub && sub.material && sub.material !== null) {
+              let newMeasure = module.mainModule.measure;
+              if (
+                module.mainModule?.module?.type === TypeModule.IMPACT_MODULE
+              ) {
+                let newPrice;
+                if (module.mainModule.measure) {
+                  newPrice = calculatePrice(
+                    sub.unitPrice?.formulaPrice,
+                    module.mainModule.measure.w,
+                    module.mainModule.measure.h,
+                    module.mainModule.measure.d,
+                    sub.unitPrice?.priceValue
+                  );
+                }
+
+                sub.price = newPrice;
+                sub.measure.h = module.mainModule.measure.h;
+              } else if (
+                module.mainModule !== null &&
+                module.mainModule?.module?.type !== TypeModule.LOVER_MODULE
+              ) {
+                let newPrice;
+
+                if (module.mainModule.measure && sub.unitPrice?.formulaPrice) {
+                  newPrice = calculatePrice(
+                    sub.unitPrice?.formulaPrice,
+                    module.mainModule.measure.w,
+                    module.mainModule.measure.h,
+                    module.mainModule.measure.d,
+                    sub.unitPrice?.priceValue
+                  );
+                }
+
+                sub.price = newPrice;
+                sub.measure = newMeasure;
+              }
+            }
+          });
+        }
+      });
+
+      const lstStepDependent = kitchen.filter(
         (item) => item?.position?.rotation === step.position.rotation
       );
 
       lstStepDependent.forEach((item) => {
         item.scale = newScale;
+
+        item.lstModule.forEach(async (module) => {
+          if (
+            module.mainModule !== null &&
+            module.mainModule?.module?.type !== TypeModule.SCALE_MODULE &&
+            module.mainModule?.module?.type !== TypeModule.LOVER_MODULE
+          ) {
+            const newMeasure = calculateMeasure(
+              module.mainModule.actualSize.width,
+              0,
+              0,
+              0,
+              newScale,
+              module.mainModule.indexDesign
+            );
+
+            module.mainModule.measure.w = newMeasure;
+          }
+
+          if (
+            module.mainModule?.material !== null &&
+            module.mainModule?.priceId
+          ) {
+            let newPrice;
+
+            if (module.mainModule?.measure) {
+              newPrice = calculatePrice(
+                module.mainModule.unitPrice?.formulaPrice,
+                module.mainModule.measure.w,
+                module.mainModule.measure.h,
+                module.mainModule.measure.d,
+                module.mainModule.unitPrice?.priceValue
+              );
+
+              module.mainModule.price = newPrice;
+            }
+          }
+
+          if (module.lstSubModule?.length > 0) {
+            module.lstSubModule.forEach(async (sub) => {
+              if (sub && sub.material && sub.material !== null) {
+                let newPrice;
+
+                if (module.mainModule.measure && sub.unitPrice?.formulaPrice) {
+                  newPrice = calculatePrice(
+                    sub.unitPrice?.formulaPrice,
+                    module.mainModule.measure.w,
+                    module.mainModule.measure.h,
+                    module.mainModule.measure.d,
+                    sub.unitPrice?.priceValue
+                  );
+                }
+
+                sub.price = newPrice;
+                sub.measure = module.mainModule.measure;
+              }
+            });
+          }
+          setRefreshTotal(Math.random() * 100);
+        });
       });
     });
+
+    let newKitchen = [...kitchen];
+
+    const totals = calculateTotalIndexDesign(newKitchen[currentStep].lstModule);
+    newKitchen[currentStep].totalIndexDesign = totals[0];
+    newKitchen[currentStep].totalMeasure = totals[1];
+
+    setKitchen(newKitchen);
   };
 
-  const loadGLTFModel = async (moduleData, index) => {
+  function findGroupsStartingWith(object, prefix) {
+    const results = [];
+
+    if (object.name.includes(prefix)) {
+      results.push(object);
+    }
+
+    object.children.forEach((child) => {
+      const childResults = findGroupsStartingWith(child, prefix);
+      results.push(...childResults);
+    });
+
+    return results;
+  }
+
+  function findObjectByName(scene, nameSubstring) {
+    function searchForObject(object, nameSubstring) {
+      if (object.name && object.name.includes(nameSubstring)) {
+        return object;
+      }
+
+      if (object.children && object.children.length > 0) {
+        for (let i = 0; i < object.children.length; i++) {
+          const child = object.children[i];
+          const found = searchForObject(child, nameSubstring);
+          if (found) {
+            return found;
+          }
+        }
+      }
+      return null;
+    }
+    return searchForObject(scene, nameSubstring);
+  }
+
+  function getSizeZ(scene) {
+    const boxHelper = new THREE.BoxHelper(scene, 0xff0000);
+    boxHelper.update();
+    const boundingBox = new THREE.Box3().setFromObject(boxHelper);
+    const size = new THREE.Vector3();
+    boundingBox.getSize(size);
+    return (boundingBox.max.z - boundingBox.min.z) / 2;
+  }
+
+  const loadGLTFModel = async (moduleData, index, curStep) => {
+    let step = null;
+    if (curStep) {
+      step = curStep;
+    } else {
+      step = currentStep;
+    }
+
     return new Promise((resolve) => {
+      const glftLoader = new GLTFLoader();
+      const dLoader = new DRACOLoader();
+      dLoader.setDecoderPath(
+        "https://www.gstatic.com/draco/versioned/decoders/1.5.6/"
+      );
+      dLoader.setDecoderConfig({ type: "js" });
+      glftLoader.setDRACOLoader(dLoader);
       if (!isLoading) {
         if (
           moduleData &&
@@ -376,37 +831,217 @@ export default function Design() {
           switch (moduleData.module.type) {
             case 1:
               setIsLoading(true);
+
               glftLoader.load(
-                `https://api.lanha.vn/profiles/module-glb/${moduleData.module.glbUrl}`,
+                `${process.env.REACT_APP_URL}uploads/modules/${moduleData.module.glbUrl}`,
+                // "./assets/glb/TA-K1-MODUL2-37-DOOR.glb",
                 (gltfScene) => {
+                  gltfScene.scene.traverse((child) => {
+                    if (child.isMesh) {
+                      child.receiveShadow = true;
+                      child.castShadow = true;
+                      child.material.metalness = 0.5;
+                      //child.material.roughness = 0.05;
+
+                      const map = child.material.map;
+                      const ballMaterial = {
+                        metalness: 0.5,
+                        roughness: 0.5,
+                        color: "#c9c9c9",
+                        normalScale: new THREE.Vector2(0.15, 0.15),
+                      };
+                      let ballMat = new THREE.MeshStandardMaterial(
+                        ballMaterial
+                      );
+
+                      if (map && child.name !== "MATBEP") {
+                        child.material = new THREE.MeshBasicMaterial({
+                          map: map,
+                        });
+                        child.material.needsUpdate = true;
+                      }
+
+                      if (child.name === "MATBEP") {
+                        child.material = ballMat;
+                      }
+                    }
+                  });
+
+                  const door = gltfScene.scene.getObjectByName("DOOR");
+
                   if (
-                    kitchen[currentStep].lstModule[index].mainModule.module
-                      .type === TypeModule.LOVER_MODULE
+                    kitchen[step].lstModule[index]?.mainModule?.module?.only ===
+                    true
                   ) {
-                    gltfScene.scene.scale.set(scale, scale, scale);
-                  } else {
                     gltfScene.scene.scale.set(
                       scale,
                       scale,
-                      scale * kitchen[currentStep].scale
+                      scale *
+                        kitchen[step].lstModule[index]?.mainModule?.gltf?.scale
+                          ?.z
                     );
+
+                    gltfScene.scene.position.set(
+                      kitchen[step].lstModule[index].mainModule.gltf.position.x,
+                      kitchen[step].lstModule[index].mainModule.gltf.position.y,
+                      kitchen[step].lstModule[index].mainModule.gltf.position
+                        .z + 0.02
+                    );
+                  } else {
+                    if (
+                      // !isPB &&
+                      isPB === false &&
+                      canInside === true &&
+                      kitchen[step].lstModule[index].mainModule.module.type !==
+                        TypeModule.LOVER_MODULE &&
+                      kitchen[step].lstModule[index].mainModule.module
+                        .coverBox === true
+                    ) {
+                      if (!kitchen[step].baseScale) {
+                        gltfScene.scene.scale.set(
+                          scale,
+                          scale - 0.04,
+                          scale *
+                            kitchen[step].lstModule[index]?.mainModule?.gltf
+                              ?.scale?.z -
+                            0.066 /
+                              kitchen[step].lstModule[index]?.mainModule
+                                ?.indexDesign
+                        );
+
+                        gltfScene.scene.position.set(
+                          kitchen[step].lstModule[index].mainModule.gltf
+                            .position.x + 0.015,
+                          kitchen[step].lstModule[index].mainModule.gltf
+                            .position.y + 0.02,
+                          kitchen[step].lstModule[index].mainModule.gltf
+                            .position.z + 0.004
+                        );
+                      } else {
+                        gltfScene.scene.scale.set(
+                          scale,
+                          scale - 0.02,
+                          scale *
+                            kitchen[step].lstModule[index]?.mainModule?.gltf
+                              ?.scale?.z -
+                            0.066 /
+                              kitchen[step].lstModule[index]?.mainModule
+                                ?.indexDesign
+                        );
+
+                        gltfScene.scene.position.set(
+                          kitchen[step].lstModule[index].mainModule.gltf
+                            .position.x + 0.015,
+                          kitchen[step].lstModule[index].mainModule.gltf
+                            .position.y + 0.02,
+                          kitchen[step].lstModule[index].mainModule.gltf
+                            .position.z + 0.004
+                        );
+                      }
+                    } else {
+                      gltfScene.scene.scale.set(
+                        scale,
+                        scale,
+                        scale *
+                          kitchen[step].lstModule[index]?.mainModule?.gltf
+                            ?.scale?.z
+                      );
+
+                      gltfScene.scene.position.set(
+                        kitchen[step].lstModule[index].mainModule.gltf.position
+                          .x,
+                        kitchen[step].lstModule[index].mainModule.gltf.position
+                          .y,
+                        kitchen[step].lstModule[index].mainModule.gltf.position
+                          .z
+                      );
+                    }
                   }
 
+                  //lot long
+
                   gltfScene.scene.rotateY(
-                    (kitchen[currentStep].position.rotation * Math.PI) / 180
-                  );
-                  gltfScene.scene.position.set(
-                    kitchen[currentStep].lstModule[index].mainModule.gltf
-                      .position.x,
-                    kitchen[currentStep].lstModule[index].mainModule.gltf
-                      .position.y,
-                    kitchen[currentStep].lstModule[index].mainModule.gltf
-                      .position.z
+                    (kitchen[step].position.rotation * Math.PI) / 180
                   );
 
-                  kitchen[currentStep].lstModule[index].lstSubModule[
-                    indexSub
-                  ].gltf = gltfScene.scene;
+                  if (door && moduleData.texture?.imgUrl) {
+                    const isHexColor = (str) => /^#[0-9A-F]{6}$/i.test(str);
+                    if (isHexColor(moduleData.texture?.imgUrl)) {
+                      const color = parseInt(
+                        moduleData.texture?.imgUrl.substring(1),
+                        16
+                      );
+                      const ballMaterial = {
+                        metalness: moduleData.material.metalness,
+                        roughness: moduleData.material.roughness,
+                        color: color,
+                        normalScale: new THREE.Vector2(0.15, 0.15),
+                      };
+                      let ballMat = new THREE.MeshStandardMaterial(
+                        ballMaterial
+                      );
+                      gltfScene.scene.traverse((node) => {
+                        if (node.isMesh) {
+                          node.material = ballMat;
+                        }
+                      });
+                    } else {
+                      textureLoader.load(
+                        `${process.env.REACT_APP_URL}uploads/images/textures/${moduleData.texture.imgUrl}`,
+
+                        (texture) => {
+                          const ballMaterial = {
+                            metalness: moduleData.material?.metalness,
+                            roughness: moduleData.material?.roughness,
+                            color: "#c9c9c9",
+                            normalScale: new THREE.Vector2(0.15, 0.15),
+                          };
+                          let ballMat = new THREE.MeshStandardMaterial(
+                            ballMaterial
+                          );
+                          gltfScene.scene.traverse((node) => {
+                            if (node.isMesh) {
+                              node.material = ballMat;
+                            }
+                          });
+
+                          texture.offset.set(1, 1);
+                          texture.wrapS = texture.wrapT =
+                            THREE.MirroredRepeatWrapping;
+                          // texture.wrapS = texture.wrapT = THREE.RepeatWrapping
+                          texture.repeat.set(1, 1);
+                          texture.mapping = THREE.UVMapping;
+                          door?.traverse((node) => {
+                            if (node.isMesh) {
+                              const materials = Array.isArray(node.material)
+                                ? node.material
+                                : [node.material];
+                              materials.forEach((material) => {
+                                material.map = texture;
+                              });
+                            }
+                          });
+                        }
+                      );
+                    }
+                  } else if (!moduleData.texture?.imgUrl) {
+                    if (moduleData.module.subSub !== true) {
+                      const ballMaterial = {
+                        metalness: 0.5,
+                        roughness: 0.5,
+                        color: "#c9c9c9",
+                        normalScale: new THREE.Vector2(0.15, 0.15),
+                      };
+                      let ballMat = new THREE.MeshStandardMaterial(
+                        ballMaterial
+                      );
+                      door?.traverse((node) => {
+                        if (node.isMesh) {
+                          node.material = ballMat;
+                        }
+                      });
+                    }
+                  }
 
                   const userData = {
                     step: currentStep,
@@ -414,11 +1049,20 @@ export default function Design() {
                   };
                   gltfScene.scene.userData = userData;
 
+                  let newKitchen = [...kitchen];
+
+                  newKitchen[step].lstModule[index].lstSubModule[
+                    indexSub
+                  ].gltf = gltfScene.scene;
+
+                  setKitchen(newKitchen);
+
                   display.scene.add(gltfScene.scene);
                   resolve(gltfScene);
                   setIsLoading(false);
                 }
               );
+
               break;
 
             case 3:
@@ -433,20 +1077,24 @@ export default function Design() {
                 rotationAngle
               ) {
                 glftLoader.load(
-                  `https://api.lanha.vn/profiles/module-glb/${moduleData.module.glbUrl}`,
+                  `${process.env.REACT_APP_URL}uploads/modules/${moduleData.module.glbUrl}`,
                   (gltfScene) => {
+                    gltfScene.scene.traverse((child) => {
+                      if (child.isMesh) {
+                        //child.material.metalness = 0.5;
+                        child.receiveShadow = true;
+                        child.castShadow = true;
+                      }
+                    });
+
                     const cosValue = Math.cos(rotationAngle);
                     var [widthGlb, depthGlb, heightGlb] = getGLBSize(
                       gltfScene.scene
                     );
 
                     const heightScale =
-                      Math.abs(
-                        scale *
-                          (forStepY?.position.y +
-                            productInfo.camera.rotateY -
-                            (point.start.y + productInfo.camera.rotateY))
-                      ) / heightGlb;
+                      Math.abs(forStepY?.position.y - point.start.y) /
+                      heightGlb;
 
                     const widthScale =
                       ((point.end.x + point.endSize.width - point.start.x) *
@@ -454,8 +1102,7 @@ export default function Design() {
                         (point.end.z - point.start.z) * forStepXZ.direction.z) /
                       widthGlb;
 
-                    gltfScene.scene.scale.x = scale;
-                    gltfScene.scene.scale.y = heightScale ? heightScale : scale;
+                    gltfScene.scene.scale.y = heightScale ? heightScale : 1;
                     gltfScene.scene.scale.z = widthScale;
 
                     var [widthGlbScaled, depthGlbScaled, heightGlbScaled] =
@@ -468,11 +1115,14 @@ export default function Design() {
                     };
 
                     gltfScene.scene.position.x =
-                      point.start.x * forStepXZ.direction.x;
-                    gltfScene.scene.position.y =
-                      point.start.y * scale + productInfo.camera.rotateY;
+                      point.start.x *
+                      (forStepXZ.direction.x === 0 ? 1 : forStepXZ.direction.x);
+                    gltfScene.scene.position.y = point.start.y;
                     gltfScene.scene.position.z =
-                      point.start.z * forStepXZ.direction.z +
+                      point.start.z *
+                        (forStepXZ.direction.z === 0
+                          ? 1
+                          : forStepXZ.direction.z) +
                       gltfScene.scene.size.width * cosValue;
 
                     gltfScene.scene.rotateY(rotationAngle);
@@ -481,6 +1131,19 @@ export default function Design() {
                       step: currentStep,
                       index: currentIndex,
                     };
+
+                    const ballMaterial = {
+                      metalness: 0.5,
+                      roughness: 0.5,
+                      color: "#c9c9c9",
+                      normalScale: new THREE.Vector2(0.15, 0.15),
+                    };
+                    let ballMat = new THREE.MeshStandardMaterial(ballMaterial);
+                    gltfScene.scene.traverse((node) => {
+                      if (node.isMesh) {
+                        node.material = ballMat;
+                      }
+                    });
 
                     gltfScene.scene.userData = userData;
                     gltfScene.scene.castShadow = true;
@@ -493,7 +1156,9 @@ export default function Design() {
                 );
               }
 
-              kitchen[currentStep].groupPuzzle.forEach((item) => {
+              let result = 0;
+              let newMeasure = 0;
+              kitchen[step].groupPuzzle.forEach((item) => {
                 const stepForXZ = kitchen.find(
                   (itemStep) => itemStep.stepId === item.forXZ
                 );
@@ -501,20 +1166,16 @@ export default function Design() {
                   (itemStep) => itemStep.stepId === item.forY
                 );
 
-                const pStart = new THREE.Vector3(
-                  item.x * scale,
-                  item.y,
-                  item.z * scale
-                );
+                const pStart = new THREE.Vector3(item.x, item.y, item.z);
                 let isCounterTop = true;
                 if (stepForY) {
                   isCounterTop = false;
                 }
 
-                let listPoint = setCounterTop(stepForXZ, pStart, isCounterTop);
-                // console.log(listPoint);
+                result = setCounterTop(stepForXZ, pStart, isCounterTop);
+                newMeasure += result.measure;
 
-                listPoint.forEach((point) => {
+                result.lstPoint.forEach((point) => {
                   loadAndAddModelToGroup(
                     combinedModelGroup,
                     point,
@@ -527,10 +1188,15 @@ export default function Design() {
 
               const box = new THREE.Box3().setFromObject(combinedModelGroup);
 
-              kitchen[currentStep].lstModule[index].mainModule.gltf =
+              kitchen[step].lstModule[index].mainModule.gltf =
                 combinedModelGroup;
-              kitchen[currentStep].lstModule[index].mainModule.physicalBox =
-                box;
+              kitchen[step].lstModule[index].mainModule.physicalBox = box;
+
+              kitchen[step].lstModule[index].mainModule.measure =
+                newMeasure + kitchen[step].measurePlus;
+              kitchen[step].measure = newMeasure + kitchen[step].measurePlus;
+              kitchen[step].totalMeasure =
+                newMeasure + kitchen[step].measurePlus;
 
               combinedModelGroup.name = "MAIN";
 
@@ -538,58 +1204,174 @@ export default function Design() {
               resolve(combinedModelGroup);
               break;
 
+            case 7:
+              let doorGltf;
+              kitchen[step].lstModule[index]?.lstSubModule.forEach((item) => {
+                if (
+                  item?.require !== true &&
+                  item?.module?.subSub !== true &&
+                  item?.module?.type === 1
+                ) {
+                  doorGltf = item.gltf;
+                }
+              });
+
+              const groupsStartingWithTAYCAMRight = findGroupsStartingWith(
+                doorGltf,
+                "TAYNAM_RIGHT"
+              );
+              const groupsStartingWithTAYCAMLeft = findGroupsStartingWith(
+                doorGltf,
+                "TAYNAM_LEFT"
+              );
+              const groupsStartingWithTAYCAMCenter = findGroupsStartingWith(
+                doorGltf,
+                "TAYNAM_CENTER"
+              );
+
+              glftLoader.load(
+                `${process.env.REACT_APP_URL}uploads/modules/${moduleData.module.glbUrl}`,
+                (gltfScene) => {
+                  gltfScene.scene.traverse((child) => {
+                    if (child.isMesh) {
+                      child.receiveShadow = true;
+                      child.castShadow = true;
+
+                      const map = child.material.map;
+                      if (map) {
+                        child.material = new THREE.MeshBasicMaterial({
+                          map: map,
+                        });
+                        child.material.needsUpdate = true;
+                      }
+                    }
+                  });
+
+                  let taynam_list = [];
+                  groupsStartingWithTAYCAMRight.forEach((item) => {
+                    item.scale.set(1, 1, 1);
+                    const tayNam = findObjectByName(
+                      gltfScene.scene,
+                      "TAYNAM_RIGHT"
+                    ).clone();
+                    if (!tayNam.name.includes("COVER")) {
+                      const move = getSizeZ(tayNam);
+                      if (item.name.includes("SCALEDOWN")) {
+                        tayNam.position.z -= move;
+                      } else if (item.name.includes("SCALEUP")) {
+                        tayNam.position.z += move;
+                      }
+                    }
+                    const data = {
+                      parent: item.uuid,
+                      taynam: tayNam.uuid,
+                    };
+                    taynam_list.push(data);
+                    item.add(tayNam);
+                  });
+                  groupsStartingWithTAYCAMLeft.forEach((item) => {
+                    item.scale.set(1, 1, 1);
+                    const tayNam = findObjectByName(
+                      gltfScene.scene,
+                      "TAYNAM_LEFT"
+                    ).clone();
+                    if (!tayNam.name.includes("COVER")) {
+                      const move = getSizeZ(tayNam);
+                      if (item.name.includes("SCALEDOWN")) {
+                        tayNam.position.z -= move;
+                      } else if (item.name.includes("SCALEUP")) {
+                        tayNam.position.z += move;
+                      }
+                    }
+                    const data = {
+                      parent: item.uuid,
+                      taynam: tayNam.uuid,
+                    };
+                    taynam_list.push(data);
+
+                    item.add(tayNam);
+                  });
+                  groupsStartingWithTAYCAMCenter.forEach((item) => {
+                    item.scale.set(1, 1, 1);
+                    const tayNam = findObjectByName(
+                      gltfScene.scene,
+                      "TAYNAM_CENTER"
+                    ).clone();
+                    const data = {
+                      parent: item.uuid,
+                      taynam: tayNam.uuid,
+                    };
+                    taynam_list.push(data);
+                    item.add(tayNam);
+                  });
+
+                  const userData = {
+                    step: currentStep,
+                    index: currentIndex,
+                  };
+                  gltfScene.scene.userData = userData;
+                  gltfScene.scene.name = "TAYNAM";
+
+                  let newKitchen = [...kitchen];
+
+                  newKitchen[step].lstModule[index].lstSubModule[
+                    indexSub
+                  ].gltf = gltfScene.scene;
+                  newKitchen[step].lstModule[index].lstSubModule[
+                    indexSub
+                  ].listTayNam = taynam_list;
+
+                  let newPrice = moduleData.price * taynam_list.length;
+                  newKitchen[step].lstModule[index].lstSubModule[
+                    indexSub
+                  ].price = newPrice;
+                  setKitchen(newKitchen);
+
+                  resolve(gltfScene);
+                  setIsLoading(false);
+                }
+              );
+              break;
+
             default:
               setIsLoading(true);
               glftLoader.load(
-                `https://api.lanha.vn/profiles/module-glb/${moduleData.module.glbUrl}`,
+                `${process.env.REACT_APP_URL}uploads/modules/${moduleData.module.glbUrl}`,
                 (gltfScene) => {
+                  gltfScene.scene.traverse((child) => {
+                    if (child.isMesh) {
+                      child.material.metalness = 0.5;
+                      // child.material.roughness = 1;
+                      child.castShadow = true;
+                    }
+                  });
                   const main = gltfScene.scene.getObjectByName("MAIN");
-                  var tempIndex = currentIndex;
-                  let widthGlb, depthGlb, heightGlb;
-                  var objectPre;
-                  const sineValue = Math.sin(
-                    (kitchen[currentStep].position.rotation * Math.PI) / 180
-                  );
+
                   const cosValue = Math.cos(
-                    (kitchen[currentStep].position.rotation * Math.PI) / 180
+                    (kitchen[step].position.rotation * Math.PI) / 180
                   );
                   if (
                     moduleData.module.type === TypeModule.REQUIRE_MODULE &&
-                    typeModuleId.dependentStep
+                    kitchen[currentStep].dependentStep
                   ) {
-                    kitchen[currentStep].lstModule[
+                    kitchen[step].lstModule[
                       currentIndex
-                    ].mainModule.dependentStep = typeModuleId.dependentStep;
+                    ].mainModule.dependentStep =
+                      kitchen[currentStep].dependentStep;
                     const stepBaseScale = kitchen.find(
-                      (step) => step.stepId == typeModuleId.dependentStep
+                      (step) =>
+                        step.stepId === kitchen[currentStep].dependentStep
                     );
 
-                    const differenceX =
-                      (stepBaseScale.position.x * stepBaseScale.direction.x -
-                        kitchen[currentStep].position.x *
-                          kitchen[currentStep].direction.x) *
-                      scale;
-                    const differenceY =
-                      (stepBaseScale.position.y * stepBaseScale.direction.y -
-                        kitchen[currentStep].position.y *
-                          kitchen[currentStep].direction.y) *
-                      scale;
-                    const differenceZ =
-                      (stepBaseScale.position.z * stepBaseScale.direction.z -
-                        kitchen[currentStep].position.z *
-                          kitchen[currentStep].direction.z) *
-                      scale;
-                    const scaleValueRequireModuleZ =
-                      (differenceX +
-                        differenceY +
-                        differenceZ +
-                        stepBaseScale.lstModule[0].mainModule.gltf.size.width /
-                          stepBaseScale.lstModule[0].mainModule.indexDesign) /
-                      (moduleData.module.size.width * scale);
+                    const scaleValueRequireModuleZ = scaleRequireModule(
+                      stepBaseScale,
+                      kitchen[step],
+                      moduleData.module
+                    );
                     gltfScene.scene.scale.set(
                       scale,
                       scale,
-                      scaleValueRequireModuleZ * scale
+                      scaleValueRequireModuleZ
                     );
                     gltfScene.scene.size = {
                       width:
@@ -602,92 +1384,193 @@ export default function Design() {
                   } else if (
                     moduleData.module.type === TypeModule.LOVER_MODULE
                   ) {
-                    gltfScene.scene.scale.set(scale, scale, scale);
-                    gltfScene.scene.size = {
-                      width: scale * moduleData.module.size.width,
-                      depth: scale * moduleData.module.size.depth,
-                      height: scale * moduleData.module.size.height,
-                    };
+                    if (kitchen[currentStep].baseScale === true) {
+                      gltfScene.scene.scale.set(scale, scale, scale);
+                      gltfScene.scene.size = {
+                        width: scale * moduleData.module.size.width,
+                        depth: scale * moduleData.module.size.depth,
+                        height: scale * moduleData.module.size.height,
+                      };
+                    } else {
+                      if (
+                        moduleData.actualSize.width ==
+                        moduleData.mainLover?.actualSizeMain?.width
+                      ) {
+                        gltfScene.scene.scale.set(scale, scale, scale);
+                        console.log(moduleData);
+                        gltfScene.scene.size = {
+                          width: scale * moduleData?.module?.size?.width,
+                          depth: scale * moduleData?.module?.size?.depth,
+                          height: scale * moduleData?.module?.size?.height,
+                        };
+                      } else {
+                        gltfScene.scene.scale.set(
+                          scale,
+                          scale,
+                          moduleData.mainLover?.scale
+                        );
+                        gltfScene.scene.size = {
+                          width:
+                            scale *
+                            moduleData.module.size.width *
+                            moduleData.mainLover.scale,
+                          depth: scale * moduleData.module.size.depth,
+                          height: scale * moduleData.module.size.height,
+                        };
+                      }
+                    }
                   } else {
-                    gltfScene.scene.scale.set(
-                      scale,
-                      scale,
-                      scale * kitchen[currentStep].scale
-                    );
+                    if (
+                      kitchen[step].lstModule[index]?.mainModule?.module
+                        ?.only === true
+                    ) {
+                      gltfScene.scene.scale.set(
+                        scale + 0.032,
+                        scale,
+                        scale * kitchen[step].scale
+                      );
+                    } else {
+                      if (
+                        // !isPB &&
+                        isPB === false &&
+                        canInside === true &&
+                        kitchen[step].lstModule[index].mainModule.module
+                          .type !== TypeModule.LOVER_MODULE &&
+                        kitchen[step].lstModule[index].mainModule.module
+                          .coverBox === true &&
+                        kitchen[step].lstModule[index].mainModule.module
+                          .only !== true
+                      ) {
+                        gltfScene.scene.scale.set(
+                          scale + 0.032,
+                          scale,
+                          scale * kitchen[step].scale
+                        );
+                      } else {
+                        gltfScene.scene.scale.set(
+                          scale,
+                          scale,
+                          scale * kitchen[step].scale
+                        );
+                      }
+                    }
+
                     gltfScene.scene.size = {
                       width:
                         scale *
                         moduleData.module.size.width *
-                        kitchen[currentStep].scale,
+                        kitchen[step].scale,
                       depth: scale * moduleData.module.size.depth,
                       height: scale * moduleData.module.size.height,
                     };
                   }
 
-                  if (index == 0) {
+                  if (index === 0) {
                     // Đưa về trục tọa độ
-                    gltfScene.scene.position.y =
-                      kitchen[currentStep].position.y * scale +
-                      productInfo.camera.rotateY;
-                    gltfScene.scene.position.x =
-                      kitchen[currentStep].position.x * scale;
-                    gltfScene.scene.position.z =
-                      kitchen[currentStep].position.z * scale +
-                      gltfScene.scene.size.width * cosValue;
+                    gltfScene.scene.position.y = moduleData.module.position?.y
+                      ? moduleData.module.position.y - Y / 2
+                      : kitchen[step].position.y;
+                    gltfScene.scene.position.x = moduleData.module.position?.x
+                      ? moduleData.module.position.x - X / 2
+                      : kitchen[step].position.x;
+                    gltfScene.scene.position.z = moduleData.module.position?.z
+                      ? moduleData.module.position.z - Z / 2
+                      : kitchen[step].position.z +
+                        gltfScene.scene.size.width * cosValue;
                   } else {
                     const objectPre =
-                      kitchen[currentStep].lstModule[index - 1]?.mainModule
-                        ?.gltf;
+                      kitchen[step].lstModule[index - 1]?.mainModule?.gltf;
 
                     gltfScene.scene.position.x =
                       objectPre.position.x +
-                      (kitchen[currentStep].direction.x >= 0
+                      (kitchen[step].direction.x >= 0
                         ? objectPre.size.width
                         : gltfScene.scene.size.width) *
-                        kitchen[currentStep].direction.x;
+                        kitchen[step].direction.x;
                     gltfScene.scene.position.y =
                       objectPre.position.y +
-                      (kitchen[currentStep].direction.y >= 0
+                      (kitchen[step].direction.y >= 0
                         ? objectPre.size.height
                         : gltfScene.scene.size.height) *
-                        kitchen[currentStep].direction.y;
+                        kitchen[step].direction.y;
                     gltfScene.scene.position.z =
                       objectPre.position.z +
-                      (kitchen[currentStep].direction.z >= 0
+                      (kitchen[step].direction.z >= 0
                         ? gltfScene.scene.size.width
                         : objectPre.size.width) *
-                        kitchen[currentStep].direction.z;
+                        kitchen[step].direction.z;
                   }
                   gltfScene.scene.rotateY(
-                    (kitchen[currentStep].position.rotation * Math.PI) / 180
+                    (kitchen[step].position.rotation * Math.PI) / 180
                   );
 
-                  // const boxVertices = getSizeModule(gltfScene.scene);
-                  // const w = 425 * scaleLeft * moduleData.indexDesign;
-                  // draw(boxVertices, w, 800, 600);
-
-                  if (main) {
-                    textureLoader.load(
-                      moduleData.texture?.imgUrl,
-                      (texture) => {
-                        main.traverse((node) => {
-                          if (node.isMesh) {
-                            texture.wrapS = THREE.RepeatWrapping;
-                            texture.wrapT = THREE.RepeatWrapping;
-
-                            let desiredWidth = 2400;
-                            let desiredHeight = 1200;
-                            let originalWidth = texture.image.width;
-                            let originalHeight = texture.image.height;
-                            let scaleWidth = desiredWidth / originalWidth;
-                            let scaleHeight = desiredHeight / originalHeight;
-                            texture.repeat.set(scaleWidth, scaleHeight);
-
-                            node.material.map = texture;
-                          }
-                        });
+                  if (main && moduleData.texture?.imgUrl) {
+                    const isHexColor = (str) => /^#[0-9A-F]{6}$/i.test(str);
+                    if (isHexColor(moduleData.texture.imgUrl)) {
+                      const ballMaterial = {
+                        metalness: moduleData.material?.metalness,
+                        roughness: moduleData.material?.roughness,
+                        color: moduleData.texture?.imgUrl,
+                        normalScale: new THREE.Vector2(0.15, 0.15),
+                      };
+                      let ballMat = new THREE.MeshStandardMaterial(
+                        ballMaterial
+                      );
+                      main.traverse((node) => {
+                        if (node.isMesh) {
+                          node.material = ballMat;
+                        }
+                      });
+                    } else {
+                      textureLoader.load(
+                        `${process.env.REACT_APP_URL}uploads/images/textures/${moduleData.texture.imgUrl}`,
+                        // "./assets/images/1.jpg",
+                        (texture) => {
+                          const ballMaterial = {
+                            metalness: moduleData.material?.metalness,
+                            roughness: moduleData.material?.roughness,
+                            color: module.name === "" ? "#ffffff" : "#c9c9c9",
+                            normalScale: new THREE.Vector2(0.15, 0.15),
+                          };
+                          let ballMat = new THREE.MeshStandardMaterial(
+                            ballMaterial
+                          );
+                          main.traverse((node) => {
+                            if (node.isMesh) {
+                              node.material = ballMat;
+                            }
+                          });
+                          texture.offset.set(1, 1);
+                          texture.wrapS = texture.wrapT =
+                            THREE.MirroredRepeatWrapping;
+                          texture.repeat.set(1, 1);
+                          texture.mapping = THREE.UVMapping;
+                          main.traverse((node) => {
+                            if (node.isMesh) {
+                              const materials = Array.isArray(node.material)
+                                ? node.material
+                                : [node.material];
+                              materials.forEach((material) => {
+                                material.map = texture;
+                              });
+                            }
+                          });
+                        }
+                      );
+                    }
+                  } else if (!moduleData.texture?.imgUrl) {
+                    const ballMaterial = {
+                      metalness: 0.5,
+                      roughness: 0.5,
+                      color: "#c9c9c9",
+                      normalScale: new THREE.Vector2(0.15, 0.15),
+                    };
+                    let ballMat = new THREE.MeshStandardMaterial(ballMaterial);
+                    main?.traverse((node) => {
+                      if (node.isMesh) {
+                        node.material = ballMat;
                       }
-                    );
+                    });
                   }
 
                   const userData = {
@@ -696,13 +1579,15 @@ export default function Design() {
                   };
 
                   gltfScene.scene.userData = userData;
-                  gltfScene.scene.castShadow = true;
 
-                  kitchen[currentStep].lstModule[index].mainModule.gltf =
+                  let newKitchen = [...kitchen];
+                  newKitchen[step].lstModule[index].mainModule.gltf =
                     gltfScene.scene;
-                  setKitchen(kitchen);
+
+                  setKitchen(newKitchen);
+
                   display.scene.add(gltfScene.scene);
-                  // console.log("Xong rồi nè");
+
                   resolve(gltfScene);
                   setIsLoading(false);
                 }
@@ -714,40 +1599,178 @@ export default function Design() {
     });
   };
 
+  const handleShowMeasure = () => {
+    for (const [i, step] of kitchen.entries()) {
+      if (
+        step.totalIndexDesign !== 0 &&
+        step.lstModule[0].mainModule !== null &&
+        step.position.x &&
+        step.measure
+      ) {
+        drawStep(display, step, step.measure, productInfo);
+      }
+
+      for (const [i, module] of step.lstModule.entries()) {
+        let showDepthHeight = false;
+
+        if (
+          module.mainModule !== null &&
+          module.mainModule?.module !== null &&
+          module.mainModule?.module?.type !== TypeModule.SCALE_MODULE
+        ) {
+          if (
+            step.lstModule[i + 1]?.mainModule === null ||
+            (i === 0 &&
+              module.mainModule?.module?.type === TypeModule.IMPACT_MODULE) ||
+            (step.lstModule[i + 1]?.mainModule !== null &&
+              module.mainModule?.module?.type !== TypeModule.IMPACT_MODULE &&
+              step.lstModule[i + 1]?.mainModule?.module?.type ===
+                TypeModule.IMPACT_MODULE)
+          ) {
+            showDepthHeight = true;
+          }
+
+          draw(
+            display,
+            step.direction,
+            module.mainModule.gltf,
+            showDepthHeight,
+            module.mainModule.measure.w,
+            module.mainModule.measure.h,
+            module.mainModule.measure.d
+          );
+        }
+      }
+    }
+  };
+
+  const handleHideMeasure = () => {
+    const objectsToRemove = [];
+
+    display.scene.traverse((object) => {
+      if (object.name === "MEASURE") {
+        objectsToRemove.push(object);
+      }
+    });
+
+    objectsToRemove.forEach((object) => {
+      display.scene.remove(object);
+    });
+  };
+
   const handleAddModule = (moduleData) => {
     if (
       moduleData?.module?.glbUrl &&
-      moduleData.module.type != 1
-      // &&
-      // moduleData.module.type != 3
+      moduleData.module.type !== TypeModule.SUBMODULE &&
+      moduleData.module.type !== 7
     ) {
-      console.log("MAIN");
       let newKitchen = [...kitchen];
-
+      kitchen[currentStep].lstModule[currentIndex].lstSubModule.forEach(
+        (item, index) => {
+          display.scene.remove(item.gltf);
+        }
+      );
       newKitchen[currentStep].lstModule[currentIndex].mainModule = moduleData;
 
-      newKitchen[currentStep].totalIndexDesign = calculateTotalIndexDesign(
+      const totals = calculateTotalIndexDesign(
         newKitchen[currentStep].lstModule
       );
-      newKitchen[currentStep].stepTotalPrice = calculateTotalPrice(
-        newKitchen[currentStep].lstModule
-      );
+
+      newKitchen[currentStep].totalIndexDesign = totals[0];
+      newKitchen[currentStep].totalMeasure = totals[1];
+
+      setKitchen(newKitchen);
+    } else if (moduleData?.module?.type === 7 || moduleData?.type === 7) {
+      let newKitchen = [...kitchen];
+      if (
+        newKitchen[currentStep].lstModule[currentIndex].lstSubModule[indexSub]
+          ?.listTayNam &&
+        newKitchen[currentStep].lstModule[currentIndex].lstSubModule[indexSub]
+          ?.module?.glbUrl !== moduleData?.module?.glbUrl
+      ) {
+        newKitchen[currentStep].lstModule[currentIndex].lstSubModule[
+          indexSub
+        ]?.listTayNam?.forEach((element) => {
+          const mainObject = display.scene.getObjectByProperty(
+            "uuid",
+            element.parent
+          );
+          const taynam = display.scene.getObjectByProperty(
+            "uuid",
+            element.taynam
+          );
+          if (mainObject !== undefined) {
+            mainObject.children = [];
+          }
+        });
+      }
+      // let countTN =
+      //   newKitchen[currentStep].lstModule[currentIndex].lstSubModule[indexSub]
+      //     ?.listTayNam?.length;
+      // let newPrice = moduleData.price * countTN;
+      // moduleData = { ...moduleData, price: newPrice };
+      newKitchen[currentStep].lstModule[currentIndex].lstSubModule[indexSub] =
+        moduleData;
 
       setKitchen(newKitchen);
     } else if (
-      moduleData?.module?.type === TypeModule.SUBMODULE ||
-      moduleData?.type === "sub"
+      (moduleData?.module?.type === TypeModule.SUBMODULE ||
+        moduleData?.type === "sub") &&
+      moduleData?.type !== 7
     ) {
       let newKitchen = [...kitchen];
+      // console.log(
+      //   kitchen[currentStep].lstModule[currentIndex].lstSubModule[indexSub]
+      // );
+      // console.log(moduleData);
 
       if (
         newKitchen[currentStep].lstModule[currentIndex].lstSubModule[indexSub]
           ?.module?.glbUrl !== moduleData?.module?.glbUrl
       ) {
-        display.scene.remove(
-          kitchen[currentStep].lstModule[currentIndex].lstSubModule[indexSub]
-            ?.gltf
-        );
+        if (moduleData.module?.subSub !== true) {
+          if (moduleData.require !== true) {
+            newKitchen[currentStep].lstModule[
+              currentIndex
+            ].lstSubModule.forEach((item, index) => {
+              if (item?.require !== true) {
+                display.scene.remove(item.gltf);
+              }
+            });
+            newKitchen[currentStep].lstModule[
+              currentIndex
+            ].lstSubModule.forEach((item, index) => {
+              if (item?.require !== true) {
+                newKitchen[currentStep].lstModule[currentIndex].lstSubModule[
+                  index
+                ] = subNull;
+              }
+            });
+          } else {
+            newKitchen[currentStep].lstModule[
+              currentIndex
+            ].lstSubModule.forEach((item, index) => {
+              if (item?.require === true) {
+                display.scene.remove(item.gltf);
+              }
+            });
+            newKitchen[currentStep].lstModule[
+              currentIndex
+            ].lstSubModule.forEach((item, index) => {
+              if (item?.require === true) {
+                newKitchen[currentStep].lstModule[currentIndex].lstSubModule[
+                  index
+                ] = subNull;
+              }
+            });
+          }
+        } else {
+          display.scene.remove(
+            newKitchen[currentStep].lstModule[currentIndex].lstSubModule[
+              indexSub
+            ]?.gltf
+          );
+        }
       }
 
       newKitchen[currentStep].lstModule[currentIndex].lstSubModule[indexSub] =
@@ -762,18 +1785,19 @@ export default function Design() {
       moduleData?.module?.type !== TypeModule.SUBMODULE &&
       moduleData?.module?.glbUrl
     ) {
-      console.log("UPDATE MAIN");
       setKitchen((prevKitchen) => {
         let newKitchen = [...prevKitchen];
 
         newKitchen[currentStep].lstModule[currentIndex].mainModule = moduleData;
 
-        newKitchen[currentStep].totalIndexDesign = calculateTotalIndexDesign(
-          newKitchen[currentStep].lstModule
-        );
-        newKitchen[currentStep].stepTotalPrice = calculateTotalPrice(
-          newKitchen[currentStep].lstModule
-        );
+        if (moduleData.module.type !== TypeModule.LOVER_MODULE) {
+          const totals = calculateTotalIndexDesign(
+            newKitchen[currentStep].lstModule
+          );
+
+          newKitchen[currentStep].totalIndexDesign = totals[0];
+          newKitchen[currentStep].totalMeasure = totals[1];
+        }
 
         return newKitchen;
       });
@@ -783,7 +1807,6 @@ export default function Design() {
         kitchen[currentStep].lstModule[currentIndex].lstSubModule[indexSub]
           ?.module?.glbUrl
     ) {
-      console.log("UPDATE SUB");
       setKitchen((prevKitchen) => {
         let newKitchen = [...prevKitchen];
 
@@ -795,14 +1818,12 @@ export default function Design() {
     }
   };
 
-  const handleChangeStep = () => {
-    setCurrentStep(executingStep + 1);
-    setExecutingStep(executingStep + 1);
+  const handleChangeStep = (step) => {
+    setCurrentStep(step);
+    setExecutingStep(step);
 
     setCurrentIndex(0);
     setExecutingIndex(0);
-    setCabinetLatest(null);
-    setDoorLatest(null);
     setMainModule(mainNull);
     setSubModule(subNull);
     setExecutingModule(null);
@@ -820,8 +1841,6 @@ export default function Design() {
     ) {
       setCurrentIndex(currentIndex + 1);
       setExecutingIndex(currentIndex + 1);
-      setCabinetLatest(null);
-      setDoorLatest(null);
       setMainModule(mainNull);
       setSubModule(subNull);
       setExecutingModule(null);
@@ -834,8 +1853,6 @@ export default function Design() {
       setExecutingStep(currentStep + 1);
       setCurrentIndex(0);
       setExecutingIndex(0);
-      setCabinetLatest(null);
-      setDoorLatest(null);
       setMainModule(mainNull);
       setSubModule(subNull);
       setExecutingModule(null);
@@ -845,71 +1862,176 @@ export default function Design() {
   };
 
   useEffect(() => {
+    dispatch(getTrademarksAction(productInfo?._id));
+    // if (
+    //   productInfo._id === "6505a0ddc825350c4db83e95" ||
+    //   productInfo._id === "652fadd14779fdc2254e9a95"
+    // ) {
+    //   setDuoiTrai(productInfo.listStep[0].designUnit);
+    //   setTrenTrai(productInfo.listStep[1].designUnit);
+    // } else if (
+    //   productInfo._id === "64ed6cc30fb69fc4cf332358" ||
+    //   productInfo._id === "652f9e1391c09661e502bc9e"
+    // ) {
+    //   setDuoiPhai(productInfo.listStep[0].designUnit);
+    //   setDuoiTrai(productInfo.listStep[1].designUnit);
+    //   setTrenPhai(productInfo.listStep[2].designUnit);
+    //   setTrenTrai(productInfo.listStep[3].designUnit);
+    // }
+
     if (productInfo && display === null) {
       display = new SceneInit("myThreeJsCanvas", productInfo);
       display.initialize(productInfo);
       display.setZoom(defaultZoom);
 
-      // const axesHelper = new THREE.AxesHelper(100);
-      // axesHelper.position.set(0, -30, 0);
+      // const axesHelper = new THREE.AxesHelper(2);
+      // axesHelper.position.set(0, 0, 0);
       // display.scene.add(axesHelper);
-
+      const hdrUrl = new URL("/public/assets/Sudio-HDRi.hdr", import.meta.url);
+      display.loadHDRAndSetupEnvironment(hdrUrl);
       display.setBackgroundGlb(productInfo);
       display.animate();
     }
 
-    if (productInfo && kitchen.length === 0) {
-      dispatch(getStepDetailAction(productInfo.listStep[currentStep]?._id));
-
+    if (display !== null && productInfo && kitchen.length === 0) {
+      localStorage.setItem("typeProduct", JSON.stringify(productInfo._id));
       const md = { mainModule: null, lstSubModule: [] };
-      var listStep = [];
+      let listStep = [];
+      listStepDetail = productInfo.listStep;
+
+      let storedFormData = JSON.parse(localStorage.getItem("formData"));
+      if (storedFormData) {
+        setWallHeight(storedFormData?.STH || storedFormData?.SUH || 2210);
+      } else {
+        setWallHeight(formData?.STH || formData?.SUH || 2210);
+      }
+      // if (storedFormData) {
+      //   setWallHeight(storedFormData?.STH || 2210);
+      // } else {
+      //   setWallHeight(formData?.STH || 2210);
+      // }
+
+      formData && localStorage.setItem("formData", JSON.stringify(formData));
 
       productInfo.listStep.forEach((step) => {
+        let measurePlus = 0;
+        let newPosition = {
+          ...step.position,
+          x: step?.position?.x - X / 2,
+          y: step?.position?.y - Y / 2,
+          z: step?.position?.z - Z / 2,
+        };
+
+        let newGroupPuzzle = step?.groupPuzzle?.map((item) => ({
+          ...item,
+          x: item.x - X / 2,
+          y: item.y - Y / 2,
+          z: item.z - Z / 2,
+        }));
+
+        if (step?.groupPuzzle[0]?.forY && step?.groupPuzzle?.length > 1) {
+          measurePlus = 600;
+        }
+
+        let measureOri = 0;
+        const input =
+          formData && formData[step?.typeSize?.width]
+            ? formData[step.typeSize.width]
+            : 0;
+        if (step?.actualSize && step?.actualSize?.width) {
+          measureOri = calculateFormula(step.actualSize.width, input);
+        } else {
+          measureOri =
+            (parseFloat(formData?.STWL) || 0) +
+            (parseFloat(formData?.STWR) || 0) +
+            measurePlus -
+            600;
+        }
+
+        const designUnitOfStep =
+          formData && formData[step?.typeSize?.width]
+            ? myRound(
+                calculateFormula(
+                  productInfo.formulaDesignUnit,
+                  formData[step?.typeSize?.width],
+                  formData[step?.typeSize?.height],
+                  formData[step?.typeSize?.depth],
+                  null
+                )
+              )
+            : step.designUnit || 1;
+
+        const scaleOfStep =
+          formData && formData[step?.typeSize?.width]
+            ? calculateFormula(
+                productInfo.formulaScale,
+                formData[step?.typeSize?.width],
+                formData[step?.typeSize?.height],
+                formData[step?.typeSize?.depth],
+                designUnitOfStep
+              )
+            : step.scale;
+
         listStep.push({
           name: step.name,
-          position: step.position,
+          formulaScale: productInfo.formulaScale,
+          formulaDesignUnit: productInfo.formulaDesignUnit,
+          position: newPosition,
           direction: step.direction,
-          scale: step.scale,
+          typeModules: step.typeModules?.map((item) => {
+            const { _id, require, startIndex } = item;
+            return { _id, require, startIndex };
+          }),
           baseScale: step.baseScale,
-          groupPuzzle: step.groupPuzzle,
-          designUnit: step.designUnit,
-          designUnitOriginal: step.designUnit,
+          dependentStep: step.dependentStep,
+          groupPuzzle: newGroupPuzzle,
+          designUnit: designUnitOfStep,
+          dependentIndexDepth: step.dependentIndexDepth,
+          designUnitOriginal: designUnitOfStep,
           stepId: step._id,
-          scale: step.scale,
-          scaleOriginal: step.scale,
+          scale: scaleOfStep,
+          scaleOriginal: scaleOfStep,
           stepsWeightLoss: step.stepsWeightLoss,
           stepsWife: step.stepsWife,
-          lstModule: Array(step.designUnit)
+          lstModule: Array(designUnitOfStep)
             .fill()
             .map(() => ({ ...md })),
+          showBtnPlus: false,
           totalIndexDesign: 0,
           stepTotalPrice: 0,
+          measure: measureOri,
+          baseMeasure:
+            formData &&
+            formData[step?.typeSize?.width] &&
+            parseFloat(formData[step.typeSize.width]),
+          measureFormula: step?.actualSize?.width,
+          measurePlus: measurePlus,
+          measureImpact: 0,
         });
       });
 
-      setKitchen(listStep);
+      const storedKitchen = JSON.parse(localStorage.getItem("kitchen"));
+      const checkChange = JSON.parse(localStorage.getItem("checkChange"));
+      if (appContext.projectDetail.length !== 0) {
+        kitchen = appContext.projectDetail;
+      } else if (checkChange === true) {
+        kitchen = listStep;
+      } else {
+        if (storedKitchen === null) {
+          kitchen = listStep;
+        } else {
+          kitchen = storedKitchen;
+        }
+      }
+
+      // kitchen = listStep;
     }
   }, [display, productInfo]);
 
   useEffect(() => {
+    // dispatch(getTrademarksAction(productInfo?.typeProduct));
     dispatch(getMaterialAction(5, 1));
-    dispatch(getTextureAction(100, 1));
-
-    setScaleLeft(1);
-    setScaleRight(1);
-
-    setBaseMeasureLeft(
-      countBaseMeasure(
-        lstMeasure?.duoiTrai,
-        countDesignUnit(lstMeasure?.duoiTrai)
-      )
-    );
-    setBaseMeasureRight(
-      countBaseMeasure(
-        lstMeasure?.duoiPhai,
-        countDesignUnit(lstMeasure?.duoiPhai)
-      )
-    );
+    dispatch(getTextureAction(50, 1));
 
     return () => {
       display = null;
@@ -928,12 +2050,11 @@ export default function Design() {
         lstSubModule: [],
       };
 
-      newKitchen[currentStep].totalIndexDesign = calculateTotalIndexDesign(
+      const totals = calculateTotalIndexDesign(
         newKitchen[currentStep].lstModule
       );
-      newKitchen[currentStep].stepTotalPrice = calculateTotalPrice(
-        newKitchen[currentStep].lstModule
-      );
+      newKitchen[currentStep].totalIndexDesign = totals[0];
+      newKitchen[currentStep].totalMeasure = totals[1];
 
       setKitchen(newKitchen);
     }
@@ -941,48 +2062,29 @@ export default function Design() {
 
   useEffect(() => {
     setTabOption("0");
-  }, [currentStep, currentIndex]);
 
-  function setTemporaryOpacity(group, duration) {
-    const targetOpacity = 0.2;
-    const endOpacity = 1;
-    const startTime = performance.now();
-    function animate(currentTime) {
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(1, elapsed / duration);
-      let opacity;
+    if (currentIndex !== 0 || currentStep !== 0) {
+      const executing = {
+        currentStep: currentStep,
+        currentIndex: currentIndex,
+      };
 
-      if (progress < 0.5) {
-        opacity = 1 - (1 - targetOpacity) * (progress * 2);
-      } else {
-        opacity =
-          targetOpacity + (endOpacity - targetOpacity) * ((progress - 0.5) * 2);
-      }
-
-      group.traverse(function (child) {
-        if (child instanceof THREE.Mesh) {
-          const originalMaterial = child.material;
-          const temporaryMaterial = originalMaterial.clone();
-          temporaryMaterial.transparent = true;
-          temporaryMaterial.opacity = opacity;
-          child.material = temporaryMaterial;
-        }
-      });
-
-      if (progress < 1) {
-        requestAnimationFrame(animate);
+      if (executing) {
+        localStorage.setItem("executing", JSON.stringify(executing));
       }
     }
-
-    requestAnimationFrame(animate);
-  }
+  }, [currentStep, currentIndex]);
 
   useEffect(() => {
-    if (tabSelected.step !== null && tabSelected.index !== null) {
+    if (
+      tabSelected.step !== null &&
+      tabSelected.index !== null &&
+      productInfo
+    ) {
       const mData =
-        kitchen[tabSelected.step].lstModule[tabSelected.index]?.mainModule;
+        kitchen[tabSelected.step]?.lstModule[tabSelected.index]?.mainModule;
       const lsData =
-        kitchen[tabSelected.step].lstModule[tabSelected.index]?.lstSubModule;
+        kitchen[tabSelected.step]?.lstModule[tabSelected.index]?.lstSubModule;
 
       setModelClicked(null);
 
@@ -992,31 +2094,26 @@ export default function Design() {
       );
 
       if (mainObject) {
-        setTemporaryOpacity(mainObject, 1000);
+        setTemporaryOpacity(mainObject, 1200);
       }
 
-      lsData.forEach((subModule) => {
-        const subObject = display.scene.getObjectByProperty(
-          "uuid",
-          subModule?.gltf?.uuid
-        );
+      lsData?.forEach((subModule) => {
+        if (
+          subModule &&
+          (subModule.module?.type === 7 ||
+            (subModule.module?.type === TypeModule.SUBMODULE &&
+              subModule.module?.subSub === false))
+        ) {
+          const subObject = display.scene.getObjectByProperty(
+            "uuid",
+            subModule?.gltf?.uuid
+          );
 
-        if (subObject) {
-          setTemporaryOpacity(subObject, 1000);
+          if (subObject) {
+            setTemporaryOpacity(subObject, 1200);
+          }
         }
       });
-
-      // const glbObject = display.scene.getObjectByProperty(
-      //   "uuid",
-      //   mData?.gltf?.uuid
-      // );
-
-      // if (glbObject) {
-      //   setTemporaryOpacity(glbObject, 0.3);
-      //   setTimeout(() => {
-      //     setTemporaryOpacity(glbObject, 1)
-      //   }, 1000);
-      // }
       setMainModule({
         ...mData,
       });
@@ -1040,10 +2137,11 @@ export default function Design() {
 
           newKitchen[currentStep].lstModule[currentIndex].mainModule = null;
 
-          newKitchen[currentStep].totalIndexDesign = calculateTotalIndexDesign(
+          const totals = calculateTotalIndexDesign(
             newKitchen[currentStep].lstModule
           );
-
+          newKitchen[currentStep].totalIndexDesign = totals[0];
+          newKitchen[currentStep].totalMeasure = totals[1];
           return newKitchen;
         });
       }
@@ -1065,25 +2163,35 @@ export default function Design() {
       setCurrentStep(modelClicked.userData.step);
       setCurrentIndex(modelClicked.userData.index);
 
-      const mainObject = display.scene.getObjectByProperty(
-        "uuid",
-        mData?.gltf?.uuid
-      );
-
-      if (mainObject) {
-        setTemporaryOpacity(mainObject, 1000);
-      }
-
-      lsData.forEach((subModule) => {
-        const subObject = display.scene.getObjectByProperty(
-          "uuid",
-          subModule?.gltf?.uuid
-        );
-
-        if (subObject) {
-          setTemporaryOpacity(subObject, 1000);
+      const setOpacity = (object) => {
+        if (
+          object &&
+          (object.module?.type === TypeModule.MAIN_MODULE ||
+            object.module?.type === 7 ||
+            (object.module?.type === TypeModule.SUBMODULE &&
+              object.module?.subSub === false))
+        ) {
+          const glbObject = display.scene.getObjectByProperty(
+            "uuid",
+            object?.gltf?.uuid
+          );
+          if (glbObject) {
+            setTemporaryOpacity(glbObject, 1200);
+          }
         }
-      });
+      };
+
+      // if (mData?.module?.type === TypeModule.SCALE_MODULE) {
+      //   display.scene.traverse((object) => {
+      //     if (object.name === "MATBEP") {
+      //       setTemporaryOpacity(object, 1200);
+      //     }
+      //   });
+      // }
+
+      setOpacity(mData);
+
+      lsData?.forEach(setOpacity);
 
       setMainModule({
         ...mData,
@@ -1109,7 +2217,13 @@ export default function Design() {
     canvas.addEventListener(
       "click",
       (event) => {
-        handleMouseDown(event, display, setModelClicked, setTabSelected);
+        handleMouseDown(
+          event,
+          display,
+          kitchen,
+          setModelClicked,
+          setTabSelected
+        );
       },
       false
     );
@@ -1126,14 +2240,18 @@ export default function Design() {
       },
       false
     );
+
     // END Xử lí click vào 1 module
   }, [modelClicked]);
 
   useEffect(() => {
     if (productInfo?.listStep) {
-      dispatch(getStepDetailAction(productInfo.listStep[currentStep]?._id));
+      setStepDetail(productInfo.listStep[currentStep]);
     }
-  }, [currentStep]);
+    if (mainModule?.module === null) {
+      setMainSelected(mainNull);
+    }
+  }, [currentStep, productInfo]);
 
   useEffect(() => {
     if (
@@ -1147,14 +2265,15 @@ export default function Design() {
         );
         for (const [indx, module] of stepWife.lstModule.entries()) {
           if (
-            countCurrentTotalDesign(stepWife, indx) === itemLover?.totalDesign
+            countCurrentTotalDesign(kitchen, stepWife, indx) ===
+            itemLover?.totalDesign
           ) {
             for (let i = indx; i < stepWife.designUnit; i++) {
               if (stepWife.lstModule[i].mainModule != null) {
                 stepWife.totalIndexDesign -=
                   stepWife.lstModule[i].mainModule?.indexDesign;
               }
-              onlyRemoveModule(display, stepWife.lstModule, i);
+              onlyRemoveModule(display, kitchen, i, stepWife);
             }
             break;
           }
@@ -1165,60 +2284,148 @@ export default function Design() {
     if (mainModule?.module?.glbUrl !== mainSelected?.module?.glbUrl) {
       display.scene.remove(mainSelected?.gltf);
       kitchen[currentStep]?.lstModule[currentIndex]?.lstSubModule?.forEach(
-        (sub, index) => {
-          const test = sub;
-          display.scene.remove(sub.gltf);
+        (sub) => {
+          display.scene.remove(sub?.gltf);
         }
       );
+
       if (kitchen[currentStep]?.lstModule[currentIndex]?.lstSubModule) {
         kitchen[currentStep].lstModule[currentIndex].lstSubModule = [];
       }
-      kitchen[currentStep].lstModule[currentIndex].lstSubModule = [];
-      if (mainModule?.indexDesign !== mainSelected?.indexDesign) {
-        if (
-          kitchen[currentStep].totalIndexDesign >
-          kitchen[currentStep].designUnit
-        ) {
-          removeLastModule(display, kitchen[currentStep]);
-        }
-      }
+      // kitchen[currentStep].lstModule[currentIndex].lstSubModule = [];
 
-      const taskLoad = loadGLTFModel(mainModule, currentIndex);
-      taskLoad.then((module) => {
-        kitchen[currentStep].lstModule[
-          currentIndex
-        ].mainModule.module.listSubmodule.forEach((item, index) => {
-          if (item.require === true) {
-            const subModuleData = {
-              module: item.listModule[0],
-            };
-            indexSub = index;
-            handleAddModule(subModuleData);
-            loadGLTFModel(subModuleData, currentIndex);
-          }
-        });
+      if (checkChange === true) {
+        loadGLTFModel(mainModule, currentIndex, currentStep).then(() => {
+          lstSub?.forEach(async (item, index) => {
+            if (item.require === true) {
+              let subModuleData = {
+                module: item.listModule[0].items[0],
+                groupId: item.listModule[0]._id,
+                type: item.nameCollection,
+                require: item.require,
+              };
+              console.log(item);
+              console.log(lstSub);
+              const isMaterialExists = item.listModule[0].materialIds.some(
+                (materialId) => materialId === subRecommended?.material?._id
+              );
+              console.log(isMaterialExists);
+              console.log(subRecommended);
+              console.log(item.listModule[0]);
+              if (item.listModule[0].items[0]?.price) {
+                subModuleData = {
+                  ...subModuleData,
+                  price: item.listModule[0].items[0]?.price,
+                };
+              } else if (isMaterialExists) {
+                let subPrice;
+                let unitPrice;
+                console.log(subRecommended.material);
+                if (subRecommended.material) {
+                  const priceValue = subRecommended.material.priceValue;
+                  // const priceValue = item?.listModule[0]?.price?.prices?.find(
+                  //   (item) =>
+                  //     (item.trademark === trademark.value &&
+                  //       item.materialIds.includes(subRecommended.material._id)) ||
+                  //     (!item.trademark &&
+                  //       item.materialIds.includes(subRecommended.material._id))
+                  // )?.priceValue;
+                  console.log(item);
+                  console.log(priceValue);
 
-        console.log("Tất cả tác vụ đã hoàn thành.", module);
+                  const unitPriceValue = await getPriceDetail(
+                    subRecommended?.material?._id,
+                    subModuleData.groupId,
+                    trademark.value
+                  );
 
-        if (
-          mainModule?.module?.type === TypeModule.LOVER_MODULE ||
-          mainSelected?.module?.type === TypeModule.LOVER_MODULE
-        ) {
-          resetBaseScale();
-        }
-        kitchen.forEach((_, index) => {
-          refresh3D(display, index, productInfo, kitchen);
+                  unitPrice = {
+                    formulaPrice: unitPriceValue?.formulaPrice,
+                    priceUser: unitPriceValue?.priceUser,
+                    priceValue: unitPriceValue?.priceValue,
+                  };
+
+                  if (priceValue !== undefined) {
+                    subPrice = calculatePrice(
+                      unitPrice?.formulaPrice,
+                      mainModule.measure.w,
+                      mainModule.measure.h,
+                      mainModule.measure.d,
+                      unitPrice?.priceValue
+                    );
+                  }
+                }
+                subModuleData = {
+                  ...subModuleData,
+                  price: subPrice,
+                  priceId: item.listModule[0]?.price?._id,
+                  material: subRecommended?.material,
+                  texture: subRecommended?.texture,
+                  unitPrice: unitPrice,
+                  measure:
+                    kitchen[currentStep].lstModule[currentIndex].mainModule
+                      .measure,
+                };
+              }
+
+              indexSub = index;
+              handleAddModule(subModuleData);
+              const loadSubRequire = loadGLTFModel(
+                subModuleData,
+                currentIndex,
+                currentStep
+              );
+
+              loadSubRequire.then(() => {
+                if (textureMB !== null) {
+                  display.scene.traverse((object) => {
+                    if (object.name === "MATBEP") {
+                      handleChangeTexture(object, textureMB);
+                      setKitchen(kitchen);
+                    }
+                  });
+                }
+              });
+            }
+          });
 
           if (
-            mainModule?.indexDesign !== mainSelected?.indexDesign ||
-            mainModule?.module?.type !== mainSelected?.module?.type
+            (mainModule?.module?.type === TypeModule.LOVER_MODULE ||
+              mainSelected?.module?.type === TypeModule.LOVER_MODULE) &&
+            kitchen[currentStep]?.baseScale === true
           ) {
-            const stepId = kitchen[currentStep].stepId;
-
-            refreshModuleScale(display, index, productInfo, kitchen, stepId);
+            resetBaseScale();
           }
+
+          kitchen.forEach((step, index) => {
+            refresh3D(
+              canInside,
+              isPB,
+              display,
+              index,
+              productInfo,
+              kitchen,
+              trademark.value
+            );
+            refreshModuleImpact(display, kitchen, index);
+
+            if (
+              mainModule?.indexDesign !== mainSelected?.indexDesign ||
+              mainModule?.module?.type !== mainSelected?.module?.type
+            ) {
+              const stepId = kitchen[currentStep].stepId;
+              refreshModuleScale(
+                display,
+                index,
+                kitchen,
+                stepId,
+                textureVB,
+                trademark
+              );
+            }
+          });
         });
-      });
+      }
 
       setMainSelected(mainModule);
 
@@ -1233,106 +2440,107 @@ export default function Design() {
         ].lstModule.entries()) {
           totalIndexToImpact += itemModule?.mainModule?.indexDesign;
           switch (itemModule.mainModule?.module?.type) {
-            case 2:
-              if (
-                kitchen[currentStep].lstModule[index - 1]?.mainModule.module
-                  .type === TypeModule.IMPACT_MODULE
-              ) {
-                break;
-              } else {
-                kitchen[currentStep].stepsWeightLoss.forEach((step) => {
-                  const stepLoss = kitchen.find(
-                    (kitchenItem) => kitchenItem.stepId === step
-                  );
-                  const newDesignUnit =
-                    totalIndexToImpact - itemModule.mainModule.indexDesign;
-                  if (newDesignUnit <= stepLoss.designUnitOriginal) {
-                    stepLoss.designUnit = newDesignUnit;
-                  } else {
-                    stepLoss.designUnit = stepLoss.designUnitOriginal;
-                  }
-                  for (let i = stepLoss.lstModule.length - 1; i >= 0; i--) {
-                    if (
-                      stepLoss.lstModule[i].mainModule != null &&
-                      stepLoss.totalIndexDesign > stepLoss.designUnit
-                    ) {
-                      stepLoss.totalIndexDesign -=
-                        stepLoss.lstModule[i].mainModule.indexDesign;
-                      onlyRemoveModule(display, stepLoss.lstModule, i);
-                    }
-                  }
-                });
-              }
-              break;
-
             case 5:
               kitchen[currentStep].stepsWife?.forEach((wife) => {
-                const kitchenWife = kitchen.find((item) => item.stepId == wife);
+                const kitchenWife = kitchen.find(
+                  (item) => item.stepId === wife
+                );
+                const [_, impactDesign] = countImpactModulePosition(
+                  kitchen,
+                  currentStep
+                );
+
+                const scaleLover =
+                  itemModule.mainModule?.actualSize?.width /
+                  itemModule.mainModule?.indexDesign /
+                  450;
 
                 const wifeModuleInfo = {
                   moduleUuid: itemModule.mainModule?.uuid,
+                  indexDesign: itemModule.mainModule?.indexDesign,
+                  scale: scaleLover,
+                  actualSizeMain: {
+                    width: itemModule.mainModule?.actualSize?.width,
+                  },
+                  actualSize: {
+                    width:
+                      itemModule.mainModule?.actualSize?.width /
+                      itemModule.mainModule?.indexDesign,
+                  },
                   totalDesign:
-                    totalIndexToImpact - itemModule.mainModule.indexDesign,
+                    totalIndexToImpact -
+                    itemModule.mainModule.indexDesign +
+                    impactDesign,
                   module: itemModule.mainModule.module,
                 };
                 kitchenWife.listModuleLover.push(wifeModuleInfo);
               });
               break;
-
-            default:
-              if (itemModule.mainModule !== null) {
-                kitchen[currentStep].stepsWeightLoss.forEach((step) => {
-                  const stepLoss = kitchen.find(
-                    (kitchenItem) => kitchenItem.stepId === step
-                  );
-                  stepLoss.designUnit = stepLoss.designUnitOriginal;
-                });
-              }
-              break;
           }
         }
       }
 
-      kitchen[currentStep]?.stepsWife.forEach((stepId) => {
+      kitchen[currentStep].stepsWife.forEach((stepId, indexStep) => {
         const stepWife = kitchen.find((stepWife) => stepWife.stepId === stepId);
         const itemLover = stepWife.listModuleLover?.find(
           (item) => item.moduleUuid === mainSelected?.uuid
         );
+
         if (stepWife.listModuleLover) {
           if (itemLover) {
             for (const [indx, module] of stepWife.lstModule.entries()) {
               if (
-                countCurrentTotalDesign(stepWife, indx) +
+                countCurrentTotalDesign(kitchen, stepWife, indx) +
                   module?.mainModule?.module?.indexDesign >
                 itemLover?.totalDesign
               ) {
+                // if (
+                //   module.mainModule.module.type === TypeModule.LOVER_MODULE &&
+                //   isExistModuleWife(
+                //     module.mainModule.module,
+                //     mainModule.module
+                //   ) === true
+                // ) {
+                //   break;
+                // }
                 for (let i = indx; i < stepWife.designUnit; i++) {
                   if (stepWife.lstModule[i].mainModule != null) {
                     stepWife.totalIndexDesign -=
                       stepWife.lstModule[i].mainModule?.indexDesign;
                   }
-                  onlyRemoveModule(display, stepWife.lstModule, i);
+                  onlyRemoveModule(display, kitchen, i, stepWife);
                 }
+                break;
               }
             }
           } else {
             for (const itemLover of stepWife.listModuleLover) {
               for (const [indx, moduleItem] of stepWife.lstModule.entries()) {
+                const resultCountCurrentTotalDesign = countCurrentTotalDesign(
+                  kitchen,
+                  stepWife,
+                  indx
+                );
+
                 if (
-                  countCurrentTotalDesign(stepWife, indx) +
+                  (resultCountCurrentTotalDesign +
                     moduleItem?.mainModule?.module?.indexDesign -
                     itemLover?.totalDesign <
                     itemLover.module.indexDesign &&
-                  countCurrentTotalDesign(stepWife, indx) +
-                    moduleItem?.mainModule?.module?.indexDesign >
-                    itemLover?.totalDesign
+                    countCurrentTotalDesign(kitchen, stepWife, indx) +
+                      moduleItem?.mainModule?.module?.indexDesign >
+                      itemLover?.totalDesign) ||
+                  (countCurrentTotalDesign(kitchen, stepWife, indx) ===
+                    itemLover?.totalDesign &&
+                    moduleItem?.mainModule?.module?.type !==
+                      TypeModule.LOVER_MODULE)
                 ) {
                   for (let i = indx; i < stepWife.designUnit; i++) {
-                    if (stepWife.lstModule[i].mainModule != null) {
+                    if (stepWife.lstModule[i].mainModule !== null) {
                       stepWife.totalIndexDesign -=
                         stepWife.lstModule[i].mainModule?.indexDesign;
                     }
-                    onlyRemoveModule(display, stepWife.lstModule, i);
+                    onlyRemoveModule(display, kitchen, i, stepWife);
                   }
                   break;
                 }
@@ -1342,67 +2550,228 @@ export default function Design() {
         }
       });
     }
-  }, [kitchen, mainSelected]);
+  }, [kitchen, mainSelected, checkChange]);
 
   useEffect(() => {
-    console.log("KITCHENS: ", kitchen);
+    console.log("KITCHEN: ", kitchen);
+    setFromDataNew(formData);
+    let kitchenBackUp = JSON.parse(JSON.stringify(kitchen));
+
+    if (kitchenBackUp.length > 0) {
+      kitchenBackUp.forEach((step) => {
+        step.lstModule.forEach((module) => {
+          if (module.mainModule && module.mainModule !== null) {
+            module.mainModule.gltf = null;
+            if (module.mainModule?.module?.listSubmodule) {
+              module.mainModule.module.listSubmodule = undefined;
+            }
+          }
+
+          if (module.lstSubModule?.length > 0) {
+            module.lstSubModule.forEach((sub) => {
+              if (sub && sub?.gltf !== null) {
+                sub.gltf = null;
+              }
+            });
+          }
+        });
+      });
+
+      localStorage.setItem("kitchen", JSON.stringify(kitchenBackUp));
+    }
+
+    if (checkReload) {
+      setTabSelected({ step: currentStep, index: currentIndex });
+    }
   }, [kitchen]);
+
+  useEffect(() => {
+    let storedKitchen = JSON.parse(localStorage.getItem("kitchen"));
+    let executing = JSON.parse(localStorage.getItem("executing"));
+    let storedShowNextStep = JSON.parse(localStorage.getItem("showNextStep"));
+    let storedCanInside = localStorage.getItem("canInside");
+    let storedIsPB = localStorage.getItem("isPB");
+    let storedRecommendedMain = JSON.parse(
+      localStorage.getItem("recommendedMain")
+    );
+    let storedRecommendedSub = JSON.parse(
+      localStorage.getItem("recommendedSub")
+    );
+
+    if (storedRecommendedMain) {
+      setRecommended(storedRecommendedMain);
+    }
+
+    if (storedRecommendedSub) {
+      setSubRecommended(storedRecommendedSub);
+    }
+
+    if (storedShowNextStep === true) {
+      setShowNextStep(storedShowNextStep);
+    }
+
+    if (storedCanInside) {
+      if (storedCanInside === true || storedCanInside === "true") {
+        setCanInside(true);
+      } else {
+        setCanInside(false);
+      }
+    }
+
+    if (storedIsPB) {
+      if (storedIsPB === true || storedIsPB === "true") {
+        setIsPB(true);
+      } else {
+        setIsPB(false);
+      }
+    }
+
+    let storedTrademark = localStorage.getItem("trademark");
+
+    if (storedTrademark) {
+      storedTrademark = JSON.parse(storedTrademark);
+      setTrademark(storedTrademark);
+    }
+
+    if (appContext.projectDetail.length !== 0) {
+      async function processStepData(stepData, stepIndex) {
+        setIsLoading(true);
+
+        for (const [index, item] of stepData.lstModule.entries()) {
+          if (
+            item.mainModule &&
+            item.mainModule !== null &&
+            item.mainModule?.module !== null
+          ) {
+            await reloadGLTFModel(
+              item.mainModule,
+              index,
+              stepIndex,
+              display,
+              appContext.projectDetail,
+              setKitchen,
+              isLoading,
+              setIsLoading,
+              isPB,
+              canInside
+            );
+
+            if (item.lstSubModule.length > 0) {
+              for (const [ids, sub] of item.lstSubModule.entries()) {
+                await reloadGLTFModel(
+                  sub,
+                  index,
+                  stepIndex,
+                  display,
+                  appContext.projectDetail,
+                  setKitchen,
+                  isLoading,
+                  setIsLoading,
+                  ids,
+                  isPB,
+                  canInside
+                );
+              }
+            }
+          }
+        }
+      }
+
+      async function processStoredKitchen(projectDetail) {
+        for (const [stepIndex, stepData] of projectDetail.entries()) {
+          await processStepData(stepData, stepIndex);
+
+          setIsLoading(false);
+        }
+      }
+
+      processStoredKitchen(appContext.projectDetail);
+    } else if (storedKitchen && storedTrademark) {
+      async function processStepData(stepData, stepIndex) {
+        setIsLoading(true);
+
+        for (const [index, item] of stepData.lstModule.entries()) {
+          if (
+            item.mainModule &&
+            item.mainModule !== null &&
+            item.mainModule?.module !== null
+          ) {
+            await reloadGLTFModel(
+              item.mainModule,
+              index,
+              stepIndex,
+              display,
+              kitchen,
+              // appContext.projectDetail,
+              setKitchen,
+              isLoading,
+              setIsLoading,
+              isPB,
+              canInside
+            );
+
+            if (item.lstSubModule.length > 0) {
+              for (const [ids, sub] of item.lstSubModule.entries()) {
+                await reloadGLTFModel(
+                  sub,
+                  index,
+                  stepIndex,
+                  display,
+                  kitchen,
+                  // appContext.projectDetail,
+                  setKitchen,
+                  isLoading,
+                  setIsLoading,
+                  ids,
+                  isPB,
+                  canInside
+                );
+              }
+            }
+          }
+        }
+      }
+
+      async function processStoredKitchen(storedKitchen) {
+        for (const [stepIndex, stepData] of storedKitchen.entries()) {
+          await processStepData(stepData, stepIndex);
+
+          setIsLoading(false);
+          if (executing) {
+            setCurrentStep(executing.currentStep);
+            setCurrentIndex(executing.currentIndex);
+            setExecutingStep(executing.currentStep);
+            setExecutingIndex(executing.currentIndex);
+          } else {
+            setCurrentStep(0);
+            setCurrentIndex(0);
+            setExecutingStep(0);
+            setExecutingIndex(0);
+          }
+        }
+      }
+
+      processStoredKitchen(storedKitchen);
+    } else {
+      setKitchen(storedKitchen);
+    }
+  }, []);
 
   useEffect(() => {
     if (
       mainModule &&
       mainModule.module?.glbUrl !== null &&
+      kitchen[currentStep] &&
       mainModule.module?.glbUrl !==
         kitchen[currentStep]?.lstModule[currentIndex]?.mainModule?.module
           ?.glbUrl
     ) {
       handleAddModule(mainModule);
-      console.log("handleAddModule");
-
-      // if (kitchen[currentStep].lstModule[currentIndex]?.lstSubModule.length !==
-      //   0) {
-      //   setTimeout(() => {
-      //     if (
-      //       mainModule?.module?.glbUrl &&
-      //       subModule.module === null
-      //     ) {
-      //       let newKitchen = [...kitchen];
-
-      //       newKitchen[currentStep].lstModule[currentIndex].lstSubModule = [];
-
-      //       setKitchen(newKitchen);
-      //     }
-      //   }, 1000);
-      // }
     }
   }, [mainModule]);
 
   useEffect(() => {
-    setLstTab(() => {
-      const newItems =
-        stepDetail?.typeModules
-          .find((module) => module.require === mainModule?.module?.require)
-          ?.listModule?.find((md) => md._id === mainModule?.module?._id)
-          ?.listSubmodule?.map((item) => item.nameCollection) || [];
-
-      const updatedLstTab = ["Cabinet", ...newItems];
-
-      return updatedLstTab;
-    });
-
-    setLstSub(
-      stepDetail?.typeModules
-        .find((module) => module.require === mainModule?.module?.require)
-        ?.listModule?.find((md) => md._id === mainModule?.module?._id)
-        ?.listSubmodule
-    );
-  }, [mainModule, stepDetail]);
-
-  useEffect(() => {
     if (mainModule?.module?.glbUrl && subModule?.module?.glbUrl !== null) {
-      console.log("ADD sub");
-      console.log(subModule);
-
       handleAddModule(subModule);
     }
   }, [subModule]);
@@ -1415,8 +2784,6 @@ export default function Design() {
         mainModule?.module?.glbUrl &&
         prevMainModule?.module?.glbUrl !== mainModule?.module?.glbUrl
       ) {
-        console.log("CASE 3: ADD MAIN");
-
         display.scene.remove(
           kitchen[currentStep].lstModule[currentIndex].mainModule.gltf
         );
@@ -1426,39 +2793,166 @@ export default function Design() {
           }
         );
 
-        loadGLTFModel(mainModule, currentIndex);
+        loadGLTFModel(mainModule, currentIndex, currentStep).then(() => {
+          lstSub?.forEach((item, index) => {
+            if (item.require === true) {
+              let subModuleData = {
+                module: item.listModule[0].items[0],
+                groupId: item.listModule[0]._id,
+                type: item.nameCollection,
+                require: item.require,
+              };
+              const isMaterialExists = item.listModule[0].materialIds.some(
+                (materialId) => materialId === subRecommended?.material?._id
+              );
+
+              if (item.listModule[0].items[0]?.price) {
+                subModuleData = {
+                  ...subModuleData,
+                  price: item.listModule[0].items[0]?.price,
+                };
+              } else if (isMaterialExists) {
+                let subPrice;
+                let unitPrice;
+
+                if (subRecommended.material) {
+                  // const priceValue = item?.listModule[0]?.price?.prices?.find(
+                  //   (item) =>
+                  //     (item.trademark === trademark.value &&
+                  //       item.materials.includes(subRecommended.material._id)) ||
+                  //     (!item.trademark &&
+                  //       item.materials.includes(subRecommended.material._id))
+                  // )?.priceValue;
+
+                  // unitPrice = {
+                  //   formulaPrice: item.listModule[0].price.formulaPrice,
+                  //   priceValue: priceValue || null,
+                  // };
+
+                  const priceValue = subRecommended.material.priceValue;
+                  unitPrice = {
+                    // formulaPrice: item.listModule[0]?.price?.formulaPrice,
+                    formulaPrice: subRecommended.material?.formulaPrice,
+                    priceValue: priceValue || null,
+                  };
+
+                  subPrice = calculatePrice(
+                    unitPrice?.formulaPrice,
+                    mainModule.measure.w,
+                    mainModule.measure.h,
+                    mainModule.measure.d,
+                    unitPrice?.priceValue
+                  );
+                }
+                subModuleData = {
+                  ...subModuleData,
+                  price: subPrice,
+                  priceId: item.listModule[0]?.price?._id,
+                  material: subRecommended?.material,
+                  texture: subRecommended?.texture,
+                  unitPrice: unitPrice,
+                  measure:
+                    kitchen[currentStep].lstModule[currentIndex].mainModule
+                      .measure,
+                };
+              }
+
+              indexSub = index;
+              handleAddModule(subModuleData);
+              loadGLTFModel(subModuleData, currentIndex, currentStep);
+            }
+          });
+
+          kitchen.forEach((step, index) => {
+            refresh3D(canInside, isPB, display, index, productInfo, kitchen);
+            refreshModuleImpact(display, kitchen, index);
+            if (
+              mainModule?.indexDesign !== mainSelected?.indexDesign ||
+              mainModule?.module?.type !== mainSelected?.module?.type
+            ) {
+              const stepId = kitchen[currentStep].stepId;
+              refreshModuleScale(
+                display,
+                index,
+                kitchen,
+                stepId,
+                textureVB,
+                trademark
+              );
+            }
+          });
+        });
       } else if (
         mainModule?.module?.glbUrl &&
         prevMainModule?.module?.glbUrl === mainModule.module?.glbUrl &&
-        (prevMainModule?.material?.icon !== mainModule.material?.icon ||
-          prevMainModule?.texture?.imgUrl !== mainModule.texture?.imgUrl)
+        (prevMainModule?.material?._id !== mainModule.material?._id ||
+          prevMainModule?.texture?._id !== mainModule.texture?._id)
       ) {
-        console.log("CASE 3: ADD MAIN TEXTURE");
-
         const glbObject = display.scene.getObjectByProperty(
           "uuid",
           mainModule?.gltf?.uuid
         );
         const mainObject = glbObject.getObjectByName("MAIN");
 
-        handleChangeTexture(mainObject, mainModule?.texture?.imgUrl);
+        if (mainModule.module.type === TypeModule.SCALE_MODULE) {
+          if (!kitchen[currentStep].groupPuzzle[0].forY) {
+            display.scene.traverse((object) => {
+              if (object.name === "MATBEP") {
+                handleChangeTexture(
+                  object,
+                  mainModule?.texture?.imgUrl,
+                  mainModule?.material?.metalness,
+                  mainModule?.material?.roughness
+                );
+              }
+            });
+
+            setTextureMB(mainModule?.texture?.imgUrl);
+          } else {
+            setTextureVB(mainModule?.texture?.imgUrl);
+          }
+
+          mainObject.children.forEach((item) => {
+            handleChangeTexture(
+              item,
+              mainModule?.texture?.imgUrl,
+              mainModule?.material?.metalness,
+              mainModule?.material?.roughness
+            );
+          });
+        } else {
+          handleChangeTexture(
+            mainObject,
+            mainModule?.texture?.imgUrl,
+            mainModule?.material?.metalness,
+            mainModule?.material?.roughness
+          );
+        }
+
         handleUpdateModule(mainModule);
       }
     }
 
-    if (
-      executingModule !== null &&
-      mainModule &&
-      mainModule.module?.glbUrl &&
-      mainModule.module?.glbUrl !== null &&
-      kitchen[executingStep].totalIndexDesign ===
-        kitchen[executingStep].designUnit
-    ) {
-      setShowNextStep(true);
-    } else {
-      setShowNextStep(false);
+    for (let index = 0; index < kitchen.length; index++) {
+      const step = kitchen[index];
+
+      if (kitchen[index + 1]) {
+        if (
+          kitchen[executingStep] &&
+          mainModule &&
+          mainModule.module?.glbUrl &&
+          mainModule.module?.glbUrl !== null &&
+          step.totalIndexDesign === step.designUnit &&
+          kitchen[index + 1]?.totalIndexDesign === 0
+        ) {
+          kitchen[index + 1].showBtnPlus = true;
+        } else {
+          kitchen[index + 1].showBtnPlus = false;
+        }
+      }
     }
-  }, [kitchen, mainModule]);
+    // }, [kitchen, mainModule, lstSub]);
+  }, [mainModule, lstSub]);
 
   useEffect(() => {
     if (display) {
@@ -1468,7 +2962,7 @@ export default function Design() {
         prevSubModule?.module?.glbUrl !== subModule?.module?.glbUrl
       ) {
         if (subModule !== subNull) {
-          console.log("CASE 4: ADD SUB");
+          // console.log("CASE 4: ADD SUB");
 
           if (subModule !== subSelected) {
             loadGLTFModel(subModule, currentIndex);
@@ -1479,7 +2973,7 @@ export default function Design() {
         prevSubModule?.module?.glbUrl === subModule?.module?.glbUrl &&
         prevSubModule?.texture?.imgUrl !== subModule?.texture?.imgUrl
       ) {
-        console.log("CASE 4: ADD SUB TEXTURE");
+        // console.log("CASE 4: ADD SUB TEXTURE", subModule?.texture?.imgUrl);
 
         const glbObject = display.scene.getObjectByProperty(
           "uuid",
@@ -1487,19 +2981,24 @@ export default function Design() {
         );
 
         const subObject = glbObject.getObjectByName("DOOR");
-
-        handleChangeTexture(subObject, subModule.texture.imgUrl);
+        handleChangeTexture(
+          subObject,
+          subModule?.texture?.imgUrl,
+          subModule?.material?.metalness,
+          subModule?.material?.roughness
+        );
       }
     }
-  }, [kitchen, subModule]);
+  }, [subModule]);
 
   const value = {
     display,
     isLoading,
-    stepDetail,
     lstMaterial,
     lstTexture,
     TypeModule,
+
+    listStepDetail,
 
     modelClicked,
     showBoxSize,
@@ -1511,6 +3010,12 @@ export default function Design() {
     subModule,
     setSubModule,
     subNull,
+    checkReload,
+    setCheckReload,
+    checkChange,
+    setCheckChange,
+    refreshTotal,
+    setRefreshTotal,
 
     mainSelected,
     setMainSelected,
@@ -1520,8 +3025,30 @@ export default function Design() {
     prevCurrentStep,
     prevCurrentIndex,
 
+    trademark,
+    trademarkRef,
     recommended,
     setRecommended,
+    subRecommended,
+    setSubRecommended,
+
+    wallHeight,
+    setWallHeight,
+
+    lstTab,
+    setLstTab,
+    baseLstTab,
+    setBaseLstTab,
+    lstSub,
+    setLstSub,
+    baseLstSub,
+    setBaseLstSub,
+    stepDetail,
+    setStepDetail,
+    infoTab,
+    setInfoTab,
+    baseInfoTab,
+    setBaseInfoTab,
 
     setCurrentDU,
 
@@ -1531,14 +3058,17 @@ export default function Design() {
     setShowBoxSize,
     setShowNextStep,
 
-    setCabinetLatest,
-    setDoorLatest,
     setIsLoading,
+
+    showPopupSave,
+    setShowPopupSave,
 
     dependentStep,
     setDependentStep,
     typeModuleId,
     setTypeModuleId,
+    typePrice,
+    setTypePrice,
     indexSub,
     setIndexSub,
 
@@ -1565,6 +3095,8 @@ export default function Design() {
     handleComplete,
     handleChangeStep,
     handleSetNullModule,
+    handleShowMeasure,
+    handleHideMeasure,
 
     handleZoomIn,
     handleZoomOut,
@@ -1574,6 +3106,8 @@ export default function Design() {
   return (
     <KitchenContext.Provider value={value}>
       <div className="customDesign">
+        {showPopupSave && <ReviewDesign />}
+
         <div className="customDesign__header">
           <button
             className="btn-border-rounded"
@@ -1584,6 +3118,51 @@ export default function Design() {
             Về trang chủ
           </button>
 
+          {canInside === true && (
+            <TreeSelect
+              value={isPB}
+              dropdownStyle={{
+                maxHeight: 500,
+                overflow: "auto",
+              }}
+              style={{
+                width: "180px",
+              }}
+              treeData={typeOption}
+              placeholder="Chọn loại tủ áo"
+              treeDefaultExpandAll
+              onChange={handleChangeType}
+              treeExpandAction="click"
+            />
+          )}
+
+          <Select
+            ref={trademarkRef}
+            className="select-trademark"
+            placeholder="Chọn nhà cung cấp"
+            onChange={handleChangeTrademark}
+            value={trademark?.value}
+            style={{
+              width: "260px",
+            }}
+          >
+            {trademarks?.map((group) => (
+              <Select.OptGroup key={group?._id} label={group?.name}>
+                {group.listTrademark.map(
+                  (option) =>
+                    option._id && (
+                      <Select.Option
+                        key={option._id}
+                        trademarkBrandId={group._id}
+                      >
+                        {option.name}
+                      </Select.Option>
+                    )
+                )}
+              </Select.OptGroup>
+            ))}
+          </Select>
+
           <div
             className="d-flex flex-row justify-content-end"
             style={{ gap: "80px" }}
@@ -1592,7 +3171,7 @@ export default function Design() {
               className="d-flex flex-row align-items-center"
               style={{ gap: "8px" }}
             >
-              <button className="btn-noborder">
+              {/* <button className="btn-noborder">
                 <LuCornerUpLeft />
                 Trở về
               </button>
@@ -1605,7 +3184,20 @@ export default function Design() {
               <button className="btn-noborder">
                 <RiDeleteBinLine />
                 Làm lại
-              </button>
+              </button> */}
+            </div>
+
+            <div>
+              <input
+                type="color"
+                id="colorPicker"
+                value={bgColor}
+                onChange={(e) => {
+                  handleBgColorChange(e);
+
+                  display.updateBackgroundColor(e.target.value);
+                }}
+              />
             </div>
 
             <div
@@ -1632,15 +3224,50 @@ export default function Design() {
                 <i className="far fa-angle-down"></i>
               </button>
 
-              <button className="btn-border-rounded">
+              {/* <button onClick={() => display.saveAsImage(productInfo)}>
+                Chụp ảnh
+              </button> */}
+
+              <button
+                className="btn-complete"
+                onClick={() => {
+                  const token = Cookies.get("token");
+
+                  if (!isLoading) {
+                    if (token) {
+                      setShowVisible(false);
+                      handleHideMeasure();
+
+                      display.saveAsImage(productInfo);
+                      setTimeout(() => {
+                        setShowPopupSave(true);
+                      }, 150);
+                    } else {
+                      navigate("/login");
+                    }
+                  }
+                }}
+                disabled={
+                  kitchen[0]?.lstModule[0]?.mainModule?.module === null ||
+                  isLoading
+                    ? true
+                    : false
+                }
+              >
                 <LuSave />
                 Lưu
               </button>
 
-              <button className="btn-complete">Hoàn Thành</button>
+              {/* <button className="btn-complete">Hoàn Thành</button> */}
             </div>
 
-            {showBoxSize && <BoxSize setShowBoxSize={setShowBoxSize} />}
+            {showBoxSize && (
+              <BoxSize
+                setShowBoxSize={setShowBoxSize}
+                type={type}
+                formData={isSizeChange ? fromDataNew : formData}
+              />
+            )}
             {showVisible && <Visible />}
           </div>
         </div>
@@ -1663,7 +3290,7 @@ export default function Design() {
 
               <div className="control__main__right">
                 <Tabs
-                  onChange={onChange}
+                  onChange={handleChangeTab}
                   activeKey={tabOption}
                   type="card"
                   centered
@@ -1674,9 +3301,9 @@ export default function Design() {
                       key: id,
                       children:
                         i === 0 ? (
-                          <MainOption />
-                        ) : i !== 0 && lstSub ? (
-                          <SubOption data={lstSub[i - 1]} />
+                          <MainOption key={i} />
+                        ) : i !== 0 && subAPI ? (
+                          <SubOption key={i} data={subAPI} />
                         ) : null,
                     };
                   })}
@@ -1692,7 +3319,7 @@ export default function Design() {
           <div id="container__canvas">
             {isLoading ? <Loading /> : null}
 
-            <canvas id="myThreeJsCanvas" />
+            <canvas id="myThreeJsCanvas" ref={canvasRef} />
 
             <div className="container-zoom">
               <Zoom />

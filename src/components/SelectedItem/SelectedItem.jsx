@@ -1,24 +1,16 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import { animateScroll as scroll } from "react-scroll";
+// import { KitchenContext } from "../Virtual/Virtual";
 import { KitchenContext } from "../Design/Design";
 import TabSelected from "../TabSelected/TabSelected";
 import "./SelectedItem.scss";
+import { calculateTotalPrice, roundNumber } from "../../utils/function";
 
 export default function SelectedItem() {
   const context = useContext(KitchenContext);
   const [totalPrice, setTotalPrice] = useState(0);
 
   const selectedRef = useRef(null);
-
-  const calculateTotalPrice = (lstModule) => {
-    return lstModule.reduce((totalPrice, item) => {
-      if (item.stepTotalPrice) {
-        return totalPrice + item.stepTotalPrice;
-      }
-
-      return totalPrice;
-    }, 0);
-  };
 
   useEffect(() => {
     // if (context.modelClicked || context.mainSelected) {
@@ -44,11 +36,17 @@ export default function SelectedItem() {
       });
     }
   }, [context.currentStep]);
-  // }, [context.modelClicked, context.mainSelected, context.currentStep]);
 
   useEffect(() => {
     setTotalPrice(calculateTotalPrice(context.kitchen));
-  }, [context.kitchen]);
+  }, [
+    context.kitchen,
+    //context.isLoading,
+    context.refreshTotal,
+    //context.mainModule,
+    //context.subModule,
+    // context.mainSelected,
+  ]);
 
   return (
     <div className="selectedItem">
@@ -62,28 +60,16 @@ export default function SelectedItem() {
         ref={selectedRef}
         className="selectedItem__main"
       >
-        {context.kitchen?.map((item, index) => {
+       
+
+        {context?.kitchen?.map((item, index) => {
           return (
-            <div key={index}>
-              {index < context.executingStep ? (
-                <div id={`item${index}`}>
-                  <TabSelected data={item} step={index} done={true} />
-                </div>
-              ) : index === context.executingStep ? (
-                <div id={`item${index}`}>
-                  <TabSelected data={item} step={index} eStep={index} />
-                </div>
-              ) : index === context.executingStep + 1 ? (
-                <div id={`item${index}`}>
-                  <TabSelected
-                    data={item}
-                    step={index}
-                    showNextStep={context.showNextStep}
-                  />
-                </div>
-              ) : index > context.executingStep + 1 ? (
-                <TabSelected data={item} step={index} />
-              ) : null}
+            <div key={index} id={`item${index}`}>
+              <TabSelected
+                data={context?.kitchen[index]}
+                step={index}
+                showNextStep={item.showBtnPlus}
+              />
             </div>
           );
         })}
@@ -92,12 +78,16 @@ export default function SelectedItem() {
       <div className="selectedItem__footer d-flex flex-row align-items-end justify-content-between">
         <div>
           <i className="fas fa-tag"></i>
-          <span>Đơn giá</span>
+          <span>Tổng giá</span>
         </div>
 
-        <p className="selectedItem__footer__total">
-          {totalPrice.toLocaleString("vi-VN")}Đ
-        </p>
+        {totalPrice ? (
+          <p className="selectedItem__footer__total">
+            {roundNumber(totalPrice)?.toLocaleString("vi-VN")}Đ
+          </p>
+        ) : (
+          <p className="selectedItem__footer__total">0Đ</p>
+        )}
       </div>
     </div>
   );

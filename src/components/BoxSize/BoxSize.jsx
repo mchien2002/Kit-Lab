@@ -1,8 +1,8 @@
 import { useSelector } from "react-redux";
-import FormType1 from "../FormType/FormType1";
+import FormType from "../FormType/FormType";
 import "./BoxSize.scss";
 
-export default function BoxSize({ setShowBoxSize }) {
+export default function BoxSize({ setShowBoxSize, type, formData }) {
   const data = JSON.parse(localStorage.getItem("measure"));
 
   return (
@@ -15,8 +15,7 @@ export default function BoxSize({ setShowBoxSize }) {
       ></div>
 
       <div className="boxSize__main">
-        {/* <FormType1 dataEdit={lstMeasure} /> */}
-        <FormType1 dataEdit={data} />
+        {type === 1 ? <FormType dataEdit={formData} /> : null}
       </div>
     </div>
   );

@@ -1,0 +1,220 @@
+$heightHeader: 60px;
+
+.virtualDesign {
+  height: 100vh;
+  overflow-y: hidden;
+
+  &__header {
+    height: $heightHeader;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+
+    box-shadow: 0px 0px 16px 0px rgba(58, 56, 49, 0.1);
+    z-index: 1000 !important;
+    background-color: #fff;
+    padding: 0 10px;
+    font-size: 12px;
+
+    &__logo {
+      max-width: 170px;
+      cursor: pointer;
+    }
+
+    .project-name {
+      input {
+        width: fit-content;
+        font-size: 20px;
+        font-weight: 600;
+        color: #565e64;
+        border: none;
+        outline: none;
+
+        &::placeholder {
+          color: #aab2b6;
+        }
+
+        &:focus {
+          border: none;
+        }
+      }
+    }
+
+    .ant-select-single {
+      height: unset;
+    }
+
+    .ant-select-selector {
+      font-size: 12px;
+      font-weight: 500;
+      height: 26px !important;
+      line-height: unset;
+      display: flex;
+      align-items: center;
+
+      .ant-select-selection-placeholder {
+        line-height: unset;
+      }
+    }
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: start;
+    height: calc(100vh - $heightHeader);
+
+    .control {
+      width: 30%;
+      height: 100%;
+
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background-color: #f2f2f2;
+
+      &::-webkit-scrollbar {
+        width: 5px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background-color: #f1f1f1;
+        border-radius: 6px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background-color: #888;
+        border-radius: 6px;
+      }
+
+      &::-webkit-scrollbar-thumb:hover {
+        background-color: #555;
+      }
+
+      &__main {
+        height: 100%;
+        overflow-x: hidden;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: row;
+
+        border: none;
+        padding: 15px;
+      }
+    }
+
+    #container__canvas {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+      width: 70%;
+      overflow: hidden;
+
+      .tool-bar {
+        position: absolute;
+        bottom: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+
+        &__main {
+          display: flex;
+          flex-direction: row;
+          justify-content: space-between;
+          align-items: center;
+          gap: 20px;
+
+          padding: 8px 16px;
+          border-radius: 50px;
+          background-color: #fff;
+          box-shadow: 0px 4px 8px 0px rgba(58, 56, 49, 0.1),
+            0px 0px 2px 0px rgba(58, 56, 49, 0.14);
+
+          svg {
+            width: 30px;
+            height: 30px;
+            padding: 4px;
+            border-radius: 50%;
+            cursor: pointer;
+
+            &:hover {
+              background-color: #ffc914;
+            }
+          }
+        }
+
+        &__sub {
+          position: absolute;
+          top: -8px;
+          left: 50%;
+          transform: translate(-50%, -100%);
+
+          display: flex;
+          flex-direction: row;
+          justify-content: space-between;
+          align-items: center;
+          gap: 10px;
+
+          background-color: #fff;
+          padding: 8px;
+          border-radius: 4px;
+          box-shadow: 0px 4px 8px 0px rgba(58, 56, 49, 0.1),
+            0px 0px 2px 0px rgba(58, 56, 49, 0.14);
+
+          .ant-slider > .ant-slider-track {
+            background-color: #ffdb62 !important;
+          }
+
+          .ant-slider > .ant-slider-handle {
+            &::after {
+              box-shadow: 0 0 0 2px #ffdb62 !important;
+            }
+          }
+
+          .ant-tooltip-arrow {
+            &:before {
+              background: #fff !important;
+            }
+          }
+
+          .ant-input-number {
+            width: 80px;
+
+            .ant-input-number-handler-wrap {
+              opacity: 1 !important;
+
+              .ant-input-number-handler {
+                &:hover {
+                  color: #ffdb62 !important;
+                  height: 50% !important;
+                }
+              }
+            }
+
+            &:hover,
+            &:focus {
+              border-color: #ffdb62 !important;
+            }
+          }
+
+          .ant-input-number-handler-wrap,
+          .ant-input-number-input-wrap {
+            &:hover,
+            &:focus {
+              border-color: #ffdb62 !important;
+            }
+          }
+        }
+      }
+
+      .spinner-container,
+      .loading-spinner {
+        position: absolute;
+      }
+    }
+  }
+}

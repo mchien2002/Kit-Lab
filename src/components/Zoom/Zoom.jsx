@@ -1,6 +1,7 @@
 import { Slider } from "antd";
 import { useContext, useState } from "react";
 import { KitchenContext } from "../Design/Design";
+// import { KitchenContext } from "../Virtual/Virtual";
 import "./Zoom.scss";
 
 export default function Zoom() {
