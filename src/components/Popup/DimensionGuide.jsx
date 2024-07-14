@@ -2,7 +2,7 @@ import React from "react";
 import "./DimensionGuide.scss";
 import { Button, Modal } from "antd";
 
-export default function DimensionGuide({ showPopupGuide, setShowPopupGuide }) {
+export default function DimensionGuide({ showPopupGuide, setShowPopupGuide ,imgSrc }) {
   const close = () => {
     setShowPopupGuide(false);
   };
@@ -18,7 +18,7 @@ export default function DimensionGuide({ showPopupGuide, setShowPopupGuide }) {
         footer={null}
       >
         <img
-          src="https://www.whirlpool.com/is/image/content/dam/business-unit/whirlpoolv2/en-us/marketing-content/site-assets/page-content/oc-articles/guide-to-refrigerator-sizes-dimensions/guide-to-refrigerator-sizes-dimensions_Width2.jpg?fmt=png-alpha&qlt=85,0&resMode=sharp2&op_usm=1.75,0.3,2,0&scl=1&constrain=fit,1"
+          src={`https://d3uqk2lgpw4rim.cloudfront.net/uploads/images/icons/${imgSrc}`}
           alt="Dimension Guide"
           className="w-100
           "

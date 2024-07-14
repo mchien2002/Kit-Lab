@@ -95,7 +95,7 @@ export const getListMaterial = async (id, trademarkId) => {
 
     try {
       const res = await callApi(
-        `material-textures?type_module_id=${id}&trademark_id=${trademarkId}`,
+        `material-textures?module_id=${id}&trademark_id=${trademarkId}`,
         "GET",
         null,
         headers

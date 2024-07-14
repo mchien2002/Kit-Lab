@@ -222,7 +222,7 @@ export default function MainOption() {
 
     let filteredListMaterials;
 
-    filteredListMaterials = await getListMaterial(group._id, trademark?.value);
+    filteredListMaterials = await getListMaterial(cabinet._id, trademark?.value);
     setListMaterials(filteredListMaterials);
 
     switch (cabinet.type) {
@@ -785,7 +785,7 @@ export default function MainOption() {
           setSelectGroup(mainModule.groupId);
 
           const filteredListMaterials = await getListMaterial(
-            mainModule.groupId,
+            mainModule.module._id,
             trademark?.value
           );
           setListMaterials(filteredListMaterials);

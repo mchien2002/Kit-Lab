@@ -3204,7 +3204,7 @@ export default function Design() {
               className="d-flex flex-row align-items-center"
               style={{ gap: "10px" }}
             >
-              <button
+              {/* <button
                 className="btn-noborder"
                 onClick={() => {
                   setShowBoxSize(!showBoxSize);
@@ -3212,7 +3212,7 @@ export default function Design() {
               >
                 Kích thước
                 <i className="far fa-angle-down ms-1"></i>
-              </button>
+              </button> */}
 
               <button
                 className="btn-noborder"

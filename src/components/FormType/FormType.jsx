@@ -246,6 +246,7 @@ export default function FormType({ type, listConfigurator, dataEdit }) {
         <DimensionGuide
           showPopupGuide={showPopupGuide}
           setShowPopupGuide={setShowPopupGuide}
+          imgSrc={listConfigurator?.[type.index]?.imgGuide}
         />
       )}
     </div>

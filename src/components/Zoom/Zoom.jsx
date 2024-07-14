@@ -13,11 +13,11 @@ export default function Zoom() {
 
   return (
     <div className="zoom">
-      <div className="zoom__left">
+      {/* <div className="zoom__left">
         <i className="far fa-expand"></i>
-      </div>
+      </div> */}
 
-      <div className="zoom__right">
+      {/* <div className="zoom__right">
         <i
           className="far fa-search-minus"
           onClick={() => {
@@ -35,7 +35,7 @@ export default function Zoom() {
             handleZoomIn();
           }}
         ></i>
-      </div>
+      </div> */}
     </div>
   );
 }

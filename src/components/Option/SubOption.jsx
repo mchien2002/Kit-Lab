@@ -547,7 +547,7 @@ export default function SubOption({ data }) {
 
           if (data && resultSubModule && resultSubModule[0]?._id) {
             resultSubModuleDetail = await getListMaterial(
-              resultSubModule[0]?._id,
+              sub?.module._id,
               trademark?.value
             );
           }
