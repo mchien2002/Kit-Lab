@@ -987,7 +987,7 @@ export default function Design() {
                       });
                     } else {
                       textureLoader.load(
-                        `${process.env.REACT_APP_URL}uploads/images/textures/${moduleData.texture.imgUrl}`,
+                        `${process.env.REACT_APP_URL}uploads/images/textures-v2/${moduleData.texture.imgUrl}`,
 
                         (texture) => {
                           const ballMaterial = {
@@ -1523,7 +1523,7 @@ export default function Design() {
                       });
                     } else {
                       textureLoader.load(
-                        `${process.env.REACT_APP_URL}uploads/images/textures/${moduleData.texture.imgUrl}`,
+                        `${process.env.REACT_APP_URL}uploads/images/textures-v2/${moduleData.texture.imgUrl}`,
                         // "./assets/images/1.jpg",
                         (texture) => {
                           const ballMaterial = {

@@ -214,7 +214,7 @@ export const reloadGLTFModel = async (
                     });
                   } else {
                     textureLoader.load(
-                      `${process.env.REACT_APP_URL}uploads/images/textures/${moduleData.texture.imgUrl}`,
+                      `${process.env.REACT_APP_URL}uploads/images/textures-v2/${moduleData.texture.imgUrl}`,
                       (texture) => {
                         const ballMaterial = {
                           metalness: moduleData.material?.metalness,
@@ -335,7 +335,7 @@ export const reloadGLTFModel = async (
 
                   if (moduleData?.texture?.imgUrl) {
                     textureLoader.load(
-                      `${process.env.REACT_APP_URL}uploads/images/textures/${moduleData.texture.imgUrl}`,
+                      `${process.env.REACT_APP_URL}uploads/images/textures-v2/${moduleData.texture.imgUrl}`,
                       (texture) => {
                         gltfScene.scene.traverse((node) => {
                           if (node.isMesh) {
@@ -751,7 +751,7 @@ export const reloadGLTFModel = async (
                       });
                     } else {
                       textureLoader.load(
-                        `${process.env.REACT_APP_URL}uploads/images/textures/${moduleData.texture.imgUrl}`,
+                        `${process.env.REACT_APP_URL}uploads/images/textures-v2/${moduleData.texture.imgUrl}`,
 
                         (texture) => {
                           const ballMaterial = {
@@ -1950,7 +1950,7 @@ export async function cloneModuleGLTF(
                 });
               } else {
                 textureLoader.load(
-                  `${process.env.REACT_APP_URL}uploads/images/textures/${moduleChange.texture.imgUrl}`,
+                  `${process.env.REACT_APP_URL}uploads/images/textures-v2/${moduleChange.texture.imgUrl}`,
                   (texture) => {
                     const ballMaterial = {
                       metalness: moduleChange.material?.metalness,
@@ -2115,7 +2115,7 @@ export async function cloneModuleGLTF(
 
             if (main && moduleChanged.mainModule?.texture?.imgUrl) {
               textureLoader.load(
-                `${process.env.REACT_APP_URL}uploads/images/textures/${moduleChanged.mainModule?.texture?.imgUrl}`,
+                `${process.env.REACT_APP_URL}uploads/images/textures-v2/${moduleChanged.mainModule?.texture?.imgUrl}`,
                 (texture) => {
                   texture.offset.set(1, 1);
                   texture.wrapS = texture.wrapT = THREE.MirroredRepeatWrapping;
@@ -2706,7 +2706,7 @@ export async function refreshModuleScale(
 
                     if (md?.texture?.imgUrl) {
                       textureLoader.load(
-                        `${process.env.REACT_APP_URL}uploads/images/textures/${md.texture.imgUrl}`,
+                        `${process.env.REACT_APP_URL}uploads/images/textures-v2/${md.texture.imgUrl}`,
                         (texture) => {
                           gltfScene.scene.traverse((node) => {
                             if (node.isMesh) {
@@ -2952,7 +2952,7 @@ export async function refreshMBVBScale(
 
                   if (md?.texture?.imgUrl) {
                     textureLoader.load(
-                      `${process.env.REACT_APP_URL}uploads/images/textures/${md.texture.imgUrl}`,
+                      `${process.env.REACT_APP_URL}uploads/images/textures-v2/${md.texture.imgUrl}`,
                       (texture) => {
                         gltfScene.scene.traverse((node) => {
                           if (node.isMesh) {
@@ -3870,7 +3870,7 @@ export const handleChangeTexture = (module, url, metaness, roughness) => {
     return new Promise((resolve, reject) => {
       url &&
         textureLoader.load(
-          `${process.env.REACT_APP_URL}uploads/images/textures/${url}`,
+          `${process.env.REACT_APP_URL}uploads/images/textures-v2/${url}`,
           (newTexture) => {
             const ballMaterial = {
               metalness: metaness,
